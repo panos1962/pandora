@@ -11,3 +11,9 @@ node_modules/*
 www/main.css
 
 www/lib/pandora.css
+
+www/bundle.js
+
+www/isodos/bundle.js
+
+www/test/bundle.js
