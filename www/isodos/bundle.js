@@ -333,7 +333,7 @@ pd.toolbarSetup = () => {
 };
 
 pd.ribbonSetup = () => {
-	pd.ribbonDOM = $('<div>').addClass('.pnd-ribbon').
+	pd.ribbonDOM = $('<div>').addClass('pnd-ribbon').
 	append($('<table>').addClass('pnd-trTable').
 	append($('<tr>').
 	append(pd.ribbonLeftDOM = $('<td>').addClass('pnd-trLeft')).

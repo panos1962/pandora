@@ -333,7 +333,7 @@ pd.toolbarSetup = () => {
 };
 
 pd.ribbonSetup = () => {
-	pd.ribbonDOM = $('<div>').addClass('.pnd-ribbon').
+	pd.ribbonDOM = $('<div>').addClass('pnd-ribbon').
 	append($('<table>').addClass('pnd-trTable').
 	append($('<tr>').
 	append(pd.ribbonLeftDOM = $('<td>').addClass('pnd-trLeft')).
@@ -1983,10 +1983,10 @@ pd.domInit(() => {
 		'keyboard': php.requestIsYes('keyboard'),
 		'zoom': 20,
 		'scribe': (paletaDOM) => {
-			let inputDOM = paletaDOM.children('.pandoraPaletaInput');
+			let inputDOM = paletaDOM.children('.pnd-paletaInput');
 			let text = inputDOM.val();
 			let list = text.split('');
-			let zoomDOM = paletaDOM.children('.pandoraPaletaZoom');
+			let zoomDOM = paletaDOM.children('.pnd-paletaZoom');
 
 			zoomDOM.empty();
 
@@ -2035,10 +2035,10 @@ pd.domInit(() => {
 			if (match.length > zoom)
 			return pd;
 
-			zoomDOM = paletaDOM.children('.pandoraPaletaZoom');
+			zoomDOM = paletaDOM.children('.pnd-paletaZoom');
 			pd.arrayWalk(match, (x) => {
 				$('<div>').
-				addClass('pandoraPaletaZoomGrami').
+				addClass('pnd-paletaZoomGrami').
 				text(x).
 				appendTo(zoomDOM);
 			});
