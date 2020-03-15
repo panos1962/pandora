@@ -26,25 +26,33 @@ git:
 	@make -s commit
 	@make -s push
 
+.PHONY: show
+show:
+	@git add --dry-run .
+
 .PHONY: status
 status:
-	@hg status
+	@git status .
+
+.PHONY: add
+add:
+	@git add --verbose .
 
 .PHONY: commit
 commit:
-	@hg commit -A -m "modifications" || :
+	@git commit --message "modifications" .; :
 
 .PHONY: push
 push:
-	@hg push || :
+	@git push
 
 .PHONY: diff
 diff:
-	@hg diff
+	@git diff .
 
 .PHONY: pull
 pull:
-	@hg pull -u
+	@git pull
 
 .PHONY: cleanup
 cleanup:
