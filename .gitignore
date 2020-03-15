@@ -9,3 +9,5 @@ private/*
 node_modules/*
 
 www/main.css
+
+www/lib/pandora.css
