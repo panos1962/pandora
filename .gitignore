@@ -1,0 +1,9 @@
+**/panos*
+**/*.swp
+**/*.min.js
+**/*.bundle.js
+local/*
+!local/README.txt
+private/*
+!private/README.txt
+node_modules/*

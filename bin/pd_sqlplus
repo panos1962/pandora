@@ -1,0 +1,350 @@
+#!/usr/bin/env bash
+###############################################################################@
+#
+# Copyright (C) YYYY Panos I. Papadopoulos <panos1962_AT_gmail_DOT_com>
+#
+# pd_sqlplus -- Πρόκειται για ORACLE SQL client wrapper. Πιο συγκεκριμένα, το
+# παρόν πρόγραμμα αποτελεί ένα είδος front-end προς τον επίσημο ORACLE SQL
+# client "sqlplus".
+#
+# Updated: YYYY-MM-DD
+#
+###############################################################################@
+
+# Το παρόν πρόγραμμα υποκαθιστά το 'sqlplus' της ORACLE. Ουσιαστικά αποτελεί
+# ένα intreface προς το 'sqlplus', ενδεχομένως με περιορισμένες δυνατότητες,
+# αλλά σωστότερο όσον αφορά τη χρήση του ως εργαλείου, π.χ. ενώ το 'sqlplus'
+# αποστέλλει αποτελέσματα και λάθη στο ίδιο κανάλι, το παρόν interface κάνει
+# διαχωρισμό. Βεβαίως, υπάρχει κόστος σε όλα αυτά αλλά υπάρχουν φορές που δεν
+# μπορείς να έχεις την πίτα ολόκληρη και το σκύλο χορτάτο.
+
+. "${PANDORA_BASEDIR:=/var/opt/pandora}/lib/pandora.sh" ||
+exit 2
+
+# Αργότερα θα κατασκευάσουμε εκ νέου το array ονομάτων προσωρινών αρχείων με
+# ονόματα που θα έχουν συγκεκριμένες καταλήξεις ".sql" και ".txt".
+
+unset pd_tmpname
+
+pd_usagemsg="[ OPTIONS… ] \
+[ FILES… ]\n
+
+Options
+‾‾‾‾‾‾‾
+-h, --help
+Display help\n
+-i, --inetractive
+Interactive mode\n
+-b, --batch
+Batch mode\n
+-F conf_file, --conf=conf_file
+Specify configuration file\n
+-D, --debug
+Debug mode\n
+--user=user_name
+Specify user name\n
+--host=host_name
+Specify database host name or host IP address\n
+--port=port_number
+Specify network port number for database server (default '1521')\n
+--sid=service_id
+Specify ORACLE service id (default 'orcl')\n
+--database=database_name
+Specify database name\n
+--nlslang=database_language
+Specify database language (default 'AMERICAN_AMERICA.AL32UTF8')\n
+--colsep=columns_separator
+Specify columns' separator string (default tab character)\n
+--null=null_string
+Specify null string representation (default Control-N)\n
+Try '--help' for more"
+
+pd_seterrcode \
+	"usage" \
+	"helperr" \
+	"prmerr" \
+	"fserr" \
+	"sqlerr" \
+	"sqlexec" \
+	""
+
+eval set -- "$(pd_parseopts "hibF:D" \
+"help,interactive,batch,conf:,debug,\
+user:,host:,port:,sid:,database:,nlslang:,\
+linesize:,colsep:,null:" "$@")"
+[ $1 -ne 0 ] && pd_usage
+shift
+
+interactive=
+debug=
+
+DBUSERNAME=
+DBUSERPASS=
+
+DBHOST=
+DBPORT="1521"
+DBSID="orcl"
+
+DBSCHEMA=
+DBNLSLANG="AMERICAN_AMERICA.AL32UTF8"
+
+linesize="1024"
+colsep="$(echo -e "\x9")"	# Tab character
+null="$(echo -e "\xE")"		# Control-N for nulls
+
+error=
+
+for arg in "$@"
+do
+	case "${arg}" in
+	-h|--help)
+		. "${PANDORA_BASEDIR}/lib/sqlplus/help.sh" 2>/dev/null &&
+		pd_exit
+
+		pd_exit "cannot read help text" "helperr"
+		;;
+	-i|--interactive)
+		interactive="yes"
+		shift
+		;;
+	-b|--batch)
+		interactive=
+		shift
+		;;
+	-F|--conf)
+		. "$2" 2>/dev/null
+
+		[ $? -ne 0 ] &&
+		pd_errmsg "$2: cannot read configuration file" &&
+		error="yes"
+
+		shift 2
+		;;
+	-D|--debug)
+		debug="yes"
+		shift 1
+		;;
+	--user)
+		DBUSERNAME="$2"
+		shift 2
+		;;
+	--host)
+		DBHOST="$2"
+		shift 2
+		;;
+	--port)
+		DBPORT="$2"
+		shift 2
+		;;
+	--sid)
+		DBSID="$2"
+		shift 2
+		;;
+	--database)
+		DBSCHEMA="$2"
+		shift 2
+		;;
+	--nlslang)
+		DBNLSLANG="$2"
+		shift 2
+		;;
+	--linesize)
+		linesize="$2"
+		shift 2
+		;;
+	--colsep)
+		colsep="$2"
+		shift 2
+		;;
+	--null)
+		null="$2"
+		shift 2
+		;;
+	--)
+		shift
+		break
+		;;
+	esac
+done
+unset arg
+
+[ -n "${error}" ] &&
+pd_usage
+
+# Τα credentials του 'sqlplus' αποτελούνται από το user name, το user password,
+# το host name, το port number στο οποίο «ακούει» το σχετικό service, και το
+# service id (SID). Όλα τα παραπάνω μπορούν να δοθούν ως πρώτη παράμετρος στο
+# command line ως εξής:
+#
+#	sqlplus user/password@host:port/SID ...
+#
+# Η παράμετρος των credentials ονομάζεται "logon" στο documentation της ORACLE.
+# Ωστόσο μπορούμε να εκκινήσουμε το 'sqlplus' και να αποκαταστήσουμε τη σύνδεση
+# με την εντολή "CONNECT" μέσα από το προς εκτέλεση SQL script:
+#
+#	...
+#	CONNECT user/password@host:port/SID;
+#	...
+#
+# Όλες οι παράμετροι σύνδεσης είναι υποχρεωτικές, εκτός από το port number το
+# οποίο είναι by default 1521 και το καθορίζουμε μόνο στην περίπτωση που είναι
+# διαφορετικό, είτε με την option --port, είτε με την παράμετρο "DBPORT" στο
+# configuration file το οποίο καθορίζουμε με την option --conf ή -F.
+#
+# Ελέγχουμε, λοιπόν, τις συνιστώσες του "logon" string που θα χρησιμοποιήσουμε
+# είτε μέσα στο script, εφόσον εκτελούμε το πρόγραμμα σε batch mode, είτε ως
+# πρώτη παράμετρο στο command line, εφόσον εκτελούμε το πρόγραμμα σε interactive
+# mode.
+
+[ -z "${DBUSERNAME}" ] &&
+pd_errmsg "user not specified" &&
+error="yes"
+
+[ -z "${DBUSERPASS}" ] &&
+pd_errmsg "password not specified" &&
+error="yes"
+
+[ -z "${DBHOST}" ] &&
+pd_errmsg "unspecified host" &&
+error="yes"
+
+! pd_isinteger "${DBPORT}" 1001 99999 &&
+pd_errmsg "${DBPORT}: invalid port number" &&
+error="yes"
+
+[ -z "${DBSID}" ] &&
+pd_errmsg "SID not specified" &&
+error="yes"
+
+! pd_isinteger "${linesize}" 1 32767 &&
+pd_errmsg "${linesize}: invalid line size" &&
+error="yes"
+
+# Αν το πρόγραμμα εκτελείται σε interactive mode, τότε θα πρέπει το standard
+# input και το standard output να σχετίζονται με το τερματικό μας.
+
+if [ -n "${interactive}" ]; then
+	[ ! -t 0 ] &&
+	pd_errmsg "non-terminal input is not allowed in interactive mode" &&
+	error="yes"
+
+	[ ! -t 1 ] &&
+	pd_errmsg "non-terminal output is not allowed in interactive mode" &&
+	error="yes"
+fi
+
+# Αν κάτι από τα παραπάνω δεν είναι σωστό, τότε διακόπτουμε τη λειτουργία τού
+# προγράμματος.
+
+[ -n "${error}" ] &&
+pd_exit "prmerr"
+
+# Κατασκευάζουμε το "logon" string σε τρεις φάσεις. Στην πρώτη φάση θέτουμε τα
+# credentials τής σύνδεσης και το host name:
+
+logon="${DBUSERNAME}/${DBUSERPASS}@${DBHOST}"
+
+# Εφόσον έχουμε καθορίσει port number, το προσαρτούμε στο "logon" string:
+
+[ -n "${DBPORT}" ] &&
+logon="${logon}:${DBPORT}"
+
+# Τέλος, κλείνουμε με το service id (SID):
+
+logon="${logon}/${DBSID}"
+
+# Πρέπει, επίσης, να μεριμνήσουμε για τη γλώσσα και το character set encoding
+# στην πλευρά του client, θέτοντας την environment variable "NLS_LANG":
+
+[ -n "${DBNLSLANG}" ] &&
+export NLS_LANG="${DBNLSLANG}"
+
+# Αν έχουμε επιλέξει interactive mode, απλώς εκτελούμε την εντολή 'sqlplus'
+# με τις δοθείσες παραμέτρους σύνδεσης και γλώσσας.
+
+[ -n "${interactive}" ] &&
+exec sqlplus "${logon}"
+
+# Έχουμε επιλέξει batch mode (default) οπότε θα πρέπει να διασφαλίσουμε την
+# ιδιωτικότητα τόσο στο SQL script που θα χρησιμοποιήσουμε, όσο και στο αρχείο
+# αποτελεσμάτων. Ετοιμάζουμε από τώρα τα προσωρινά αρχεία που θα χρειαστούμε
+# και καθορίζουμε περιορισμένη πρόσβαση σε κάποια από αυτά.
+
+declare -a pd_tmpname
+
+pd_tmpname[1]="${pd_tmpdir}/$$pd.sql"
+sqlscript="${pd_tmpname[1]}"
+>"${sqlscript}"
+chmod 600 "${sqlscript}"
+
+pd_tmpname[2]="${pd_tmpdir}/$$pd.txt"
+output="${pd_tmpname[2]}"
+>"${output}"
+chmod 600 "${output}"
+
+pd_sigtrap SIGHUP SIGINT SIGQUIT SIGTERM
+
+# Εκκινούμε την κατασκευή του SQL script, με τον καθορισμό του αρχείου
+# αποτελεσμάτων μέσω της εντολής "SPOOL" και αμέσως μετά δίνουμε βασικές
+# εντολές διαχείρισης λαθών, διαμόρφωσης αποτελεσμάτων και εμφάνισης
+# ενημερωτικών μηνυμάτων. Κατόπιν επιχειρούμε σύνδεση με την database
+# και ακολουθούν τα SQL queries που δόθηκαν στο command line· αν δεν
+# έχουν καθοριστεί SQL queries στο command line, τότε διαβάζουμε από
+# το standard input.
+
+. "${PANDORA_BASEDIR}/lib/sqlplus/settings.sh" >"${sqlscript}" ||
+pd_exit "fserr"
+
+# Προσθέτουμε τα SQL queries που καθορίστηκαν στο command line, ή διαβάζουμε
+# από το standard input εφόσον δεν έχουμε καθορίσει SQL scripts στο command
+# line:
+
+cat "$@" >>"${sqlscript}" ||
+pd_exit "fserr"
+
+# Τέλος, επισυνάπτουμε εντολές αποσύνδεσης και εξόδου από το sqlplus:
+
+echo "
+DISCONNECT;
+EXIT" >>"${sqlscript}"
+
+# Αν είμαστε σε debug mode, τότε απλώς τυπώνουμε το τελικό SQL script στο
+# standard output και διακόπτουμε τη λειτουργία τού προγράμματος.
+
+[ -n "${debug}" ] &&
+cat "${sqlscript}" &&
+pd_exit
+
+# Στην εντολή "SPOOL" μέσω της οποίας επανακατευθύνουμε τα αποτελέσματα στο
+# αρχείο αποτελεσμάτων, χρησιμοποιήσαμε την εντολή "REPLACE" αντί της εντολής
+# "CREATE", προκειμένου να διασφαλίσουμε την ιδιωτικότητα του αρχείου των
+# αποτελεσμάτων. Ως εκ τούτου, θα πρέπει να υπάρχει το αρχείο αποτελεσμάτων,
+# οπότε μηδενίζουμε το περιεχόμενο του αρχείου αποτελεσμάτων και προχωρούμε
+# στην εκτέλεση του SQL script δίνοντας τις options "-F" για ταχύτητα, "-S"
+# για την αποφυγή εκτύπωσης ενοχλητικών μηνυμάτων, και "/nolog", εφόσον θα
+# συνδεθούμε με τον database server μέσω της εντολής "CONNECT" και όχι με
+# χρήση του logon string στο command line.
+
+>"${output}"
+sqlplus -F -S /nolog "@${sqlscript}"
+
+# Αν το sqlplus επέστρεψε μη μηδενικό exit status, τότε κάτι δεν πήγε καλά
+# επομένως θεωρούμε ότι στο output δεν έχουμε αποτελέσματα, αλλά μηνύματα
+# λάθους, καθώς το sqlplus δεν διαχωρίζει καθαρά τα λάθη από τα αποτελέσματα.
+# Ως εκ τούτου, πέρα από τα μηνύματα λάθους που ίσως έχουν ήδη εκτυπωθεί στο
+# standard error, εκτυπώνουμε στο κανάλι λαθών ΚΑΙ το περιεχόμενο τού αρχείου
+# αποτελεσμάτων. Aμέσως μετά διακόπτουμε τη λειτουργία του προγράμματος με μη
+# μηδενικό exit status.
+
+[ $? -ne 0 ] &&
+cat "${output}" >&2 &&
+pd_exit "sqlerr"
+
+# Στο σημείο αυτό φαίνεται να έχουν πάει όλα κατ' ευχήν και προσωρούμε στο
+# «φινίρισμα» και στην εκτύπωση των αποτελεσμάτων.
+
+sed "s; *${colsep} *;${colsep};g
+s;^ *;;
+s; *$;;" "${output}"
+
+pd_exit

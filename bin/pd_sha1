@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+[ $# -ne 1 ] && exit 0
+
+echo -n "$1" | sha1sum | awk '{ print $1 }'

@@ -1,0 +1,337 @@
+html {
+  height: 100%;
+}
+body {
+  position: relative;
+  height: 100%;
+  margin: 0px;
+  font-family: 'Georgia', serif;
+  font-size: 18px;
+}
+.pnd-toolbar {
+  padding-bottom: 4px;
+  border-style: none none solid none;
+  border-width: 2px;
+  border-color: #888;
+}
+.pnd-toolbar > table > tr {
+  vertical-align: bottom;
+}
+.pnd-toolbar > table > tr > td {
+  white-space: nowrap;
+}
+.pnd-toolbar > table > tr > td div {
+  display: inline-block;
+}
+.pnd-ribbon {
+  padding-top: 4px;
+  border-style: solid none none none;
+  border-width: 2px;
+  border-color: #888;
+}
+.pnd-ribbon > table > tr {
+  vertical-align: top;
+}
+.pnd-ribbon > table > tr > td {
+  white-space: nowrap;
+}
+.pnd-ribbon > table > tr > td div {
+  display: inline-block;
+}
+.pnd-trTable {
+  border-collapse: collapse;
+  width: 100%;
+  height: 100%;
+}
+.pnd-trLeft {
+  width: 49.9999%;
+  text-align: left;
+}
+.pnd-trCenter {
+  width: 0.0002%;
+  text-align: center;
+}
+.pnd-trRight {
+  width: 49.9999%;
+  text-align: right;
+}
+.pnd-fyi {
+  visibility: hidden;
+  padding: 2px;
+  height: 1.2em;
+  font-style: italic;
+  background-color: #ffff80;
+  box-shadow: 0px 1px 4px #cecece;
+}
+.pnd-fyiMessage {
+  color: #000080;
+}
+.pnd-fyiError {
+  color: #c00;
+}
+.pnd-ofelimo {
+  display: block;
+  padding: 8px;
+  overflow-y: scroll;
+}
+.pnd-forma {
+  display: inline-block;
+  padding: 10px;
+  background-color: #f3f3f3;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #b7b7b7;
+  border-radius: 10px;
+  box-shadow: 2px 2px 4px rgba(136,136,136,0.533);
+}
+.pnd-inputTable {
+  font-size: 100%;
+}
+.pnd-protropi {
+  text-align: right;
+  padding-right: 4px;
+  font-style: italic;
+}
+.pnd-pedio {
+  text-align: left;
+}
+.pnd-pedio > input {
+  padding-left: 2px;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-size: 100%;
+}
+.pnd-karta {
+  display: inline-block;
+  vertical-align: top;
+  margin: 2px;
+  padding: 2px;
+  background-color: #fff8ed;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #bdbdbd;
+}
+.pnd-kartaRow {
+  display: table-row;
+}
+.pnd-kartaSec {
+  display: none;
+}
+.pnd-kartaCol {
+  vertical-align: top;
+  text-align: right;
+  color: #444;
+}
+.pnd-kartaVal {
+  vertical-align: top;
+  padding-left: 2px;
+  font-weight: bold;
+  background-color: #fdfdfd;
+  border-style: none none solid solid;
+  border-width: 1px;
+  border-color: #e4e4e4;
+}
+.pnd-paleta {
+  position: relative;
+  display: inline-block;
+  margin: 4px;
+  padding: 4px;
+  text-align: center;
+  background-color: #a9a9a9;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #808080;
+  border-radius: 10px;
+}
+.pnd-paletaInput {
+  visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0px;
+  height: 0px;
+  font-size: 0px;
+}
+.pnd-paletaInputVisible {
+  visibility: visible;
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 97%;
+  height: auto;
+  font-size: 12px;
+  border-radius: 5px;
+}
+.pnd-paletaGrami {
+  display: block;
+  white-space: nowrap;
+  text-align: center;
+}
+.pnd-paletaGramiTools {
+  display: block;
+}
+.pnd-paletaPliktroContainer {
+  display: inline-block;
+  padding: 2px 4px;
+}
+.pnd-paletaPliktro {
+  padding: 2px;
+  width: 32px;
+  height: 32px;
+  text-align: center;
+  vertical-align: middle;
+  font-size: 30px;
+  font-family: 'Garamont', serif;
+  font-weight: bold;
+  color: #1f3750;
+  background-color: #fffff0;
+  text-shadow: 1px 1px 2px #888;
+  border-style: outset;
+  border-width: 2px;
+  border-color: #808080;
+  border-radius: 6px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.pnd-paletaPliktroHover {
+  color: #1d0808;
+  text-shadow: 1px 1px 0px #563813;
+  background-color: #ffffbe;
+  box-shadow: 1px 1px 1px #4f1f9c, -1px -1px 1px #72709a;
+  cursor: pointer;
+}
+.pnd-paletaPliktroSpecial {
+  width: auto;
+  margin: 0px 2px;
+  padding: 2px 12px;
+  background-color: #eee8aa;
+}
+.pnd-paletaKeyboardStripteaseKey {
+  width: auto;
+}
+.pnd-paletaSpaceKey {
+  font-family: "Roboto Condensed", monospace;
+  font-weight: normal;
+  width: 3em;
+  margin: 2px 0px;
+  background-color: #fffff0;
+}
+.pnd-paletaKeyboardSwitchKey {
+  font-family: monospace;
+  color: #800000;
+}
+.pnd-paletaZoomModeKey {
+  width: 30px;
+  color: #556b2f;
+}
+.pnd-paletaBackspaceKey {
+  color: #193a37;
+}
+.pnd-paletaClearKey {
+  color: #f00;
+}
+.pnd-paletaRecallKey {
+  color: #00f;
+}
+.pnd-paletaSubmitKey {
+  color: #191970;
+}
+.pnd-paletaMonitor {
+  margin: 4px;
+  padding: 2px;
+  min-height: 36px;
+  text-align: left;
+  font-size: 30px;
+  font-family: 'Garamont', serif;
+  font-weight: bold;
+  background-color: #fffff0;
+  border-style: outset;
+  border-width: 2px;
+  border-color: #808080;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.pnd-paletaMonitorScrambled {
+  padding: 12px;
+  font-size: 10px;
+  letter-spacing: 15px;
+  min-height: 16px;
+  color: transparent !important;
+  text-shadow: 1px 1px 8px #000, -1px -1px 8px #000, 1px -1px 8px #000, -1px 1px 8px #000, 1px 0px 8px #000, 0px 1px 8px #000, -1px 0px 8px #000, 0px -1px 8px #000;
+}
+.pnd-paletaZoomGrami {
+  margin: 4px;
+  padding: 2px;
+  text-align: left;
+  font-size: 30px;
+  font-family: 'Roboto Condensed', 'Verdana', sans-serif;
+  font-weight: normal;
+  background-color: #ffff80;
+  border-style: outset;
+  border-width: 2px;
+  border-color: #808080;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.pnd-paletaRafi {
+  position: relative;
+  margin: 4px;
+  text-align: left;
+  font-size: 30px;
+  font-family: 'Roboto Condensed', 'Verdana', sans-serif;
+  font-weight: normal;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+.pnd-paletaRafiMeTitlo {
+  margin-top: 26px;
+  padding-top: 20px;
+}
+.pnd-paletaRafiContent {
+  position: relative;
+  overflow-y: hidden;
+  text-align: left;
+  background-color: #eee8aa;
+  border-style: solid;
+  border-width: 1px 2px 2px 1px;
+  border-color: #808080;
+  border-radius: 6px;
+}
+.pnd-paletaRafiContentMeTitlo {
+  top: -20px;
+  padding-top: 20px;
+}
+.pnd-paletaRafiTitlos {
+  position: absolute;
+  top: -20px;
+  left: 0px;
+  display: inline-block;
+  padding: 2px 4px;
+  font-size: 26px;
+  background-color: #eee8aa;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #808080;
+  border-radius: 6px;
+}
+.pnd-paletaRafiTitlos:hover {
+  padding: 0px 2px;
+  color: #002d48;
+  background-color: #ffb939;
+  text-shadow: 0px 0px 1px #000;
+  border-style: ridge;
+  border-color: #ff9f00;
+  border-width: 3px;
+  box-shadow: 2px 2px 6px #4e4e4e;
+  cursor: pointer;
+}
+.pnd-paletaCandi {
+  font-weight: bold;
+  color: #002d48;
+  background-color: #ffb939;
+}
+.pnd-flip180 {
+  transform: rotate(180deg);
+}

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+# Το παρόν πρόγραμμα αφαιρεί τα σχόλια από shell scripts. Επίσης, αφαιρεί tabs
+# από την αρχή γραμμής και κενές γραμμές. Το πρόγραμμα δεν είναι απολύτως
+# ασφαλές, επομένως θα πρέπει να είστε προσεκτικοί.
+
+progname="$(basename "$0")"
+
+usage() {
+	echo "usage: ${progname} [ -t target ] [ files... ]" >&2
+	exit 1
+}
+
+error=
+target=
+
+while getopts ":t:s:" opt
+do
+	case "${opt}" in
+	t)
+		target="${OPTARG}"
+		;;
+	s)
+		sep="${OPTARG}"
+		;;
+	\?)
+		echo "${progname}: -${OPTARG}: invalid option" >&2
+		error="yes"
+	esac
+done
+
+[ -n "${error}" ] && usage
+shift $((${OPTIND}-1))
+
+[ -n "${target}" ] &&
+exec >"${target}"
+
+exec sed '1 {
+	/^#!/ {
+		p
+	}
+}
+
+/^[ \t]*#/d
+
+s/^[ \t]*//
+
+/^$/d' "$@"

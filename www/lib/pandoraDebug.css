@@ -1,0 +1,32 @@
+html {
+  background-color: #f00;
+}
+body {
+  background-color: #5f9ea0;
+}
+.pnd-ofelimo {
+  background-color: #ffe4b5;
+}
+.pnd-toolbar {
+  background-color: #dc143c;
+  border-color: #191970;
+}
+.pnd-ribbon {
+  background-color: #dc143c;
+  border-color: #191970;
+}
+.pnd-trLeft {
+  background-color: #ff7f50;
+}
+.pnd-trCenter {
+  background-color: #ffd700;
+}
+.pnd-trRight {
+  background-color: #ff7f50;
+}
+.pnd-paleta {
+  background-color: darkSeaGreen;
+}
+.pnd-paletaRafi {
+  background-color: #ffd700;
+}

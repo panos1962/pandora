@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+
+###############################################################################@
+##
+## @BEGIN
+##
+## @COPYRIGHT BEGIN
+## Copyright (C) 2020 Panos I. Papadopoulos <panos1962_AT_gmail_DOT_com>
+## @COPYRIGHT END
+##
+## @FILETYPE BEGIN
+## bash
+## @FILETYPE END
+##
+## @FILE BEGIN
+## database/createdb —— Πρόγραμμα δημιουργίας νέας database
+## @FILE END
+##
+## @DESCRIPTION BEGIN
+## @DESCRIPTION END
+##
+## @HISTORY BEGIN
+## Created: 2020-01-10
+## @HISTORY END
+##
+## @END
+##
+###############################################################################@
+
+[ -z "${PANDORA_BASEDIR}" ] &&
+PANDORA_BASEDIR="/var/opt/pandora"
+
+pd_tmpmax=0
+. "${PANDORA_BASEDIR}/lib/pandora.sh" ||
+exit 2
+
+pd_progname="${pd_progfull}"
+pd_usagemsg="[ OPTIONS ] [ FILES ]
+Options
+-------
+-a dbadmincf
+-d databasecf
+-C
+-q
+"
+
+pd_seterrcode \
+	"fserr" \
+	"dbadmincferr" \
+	"databasecferr" \
+	"createdberr"
+
+dbadmincf="local/dbadmin.cf"
+databasecf=
+create=
+monitor="/dev/tty"
+
+error=
+
+while getopts ":a:d:Cqv" arg
+do
+	case "${arg}" in
+	a)
+		dbadmincf="${OPTARG}"
+		;;
+	d)
+		databasecf="${OPTARG}"
+		;;
+	C)
+		create="yes"
+		;;
+	q)
+		monitor="/dev/null"
+		;;
+	v)
+		monitor="/dev/tty"
+		;;
+	\?)
+		pd_errmsg "-${OPTARG}$(pd_terr reset): invalid option"
+		error="yes"
+		;;
+	esac
+done
+
+[ -n "${error}" ] &&
+pd_usage
+
+shift $((OPTIND-1))
+
+[ -z "${databasecf}" ] &&
+pd_errmsg "unspecified database configuartion file" &&
+pd_exit "databasecferr"
+
+. "${databasecf}" ||
+pd_exit "databasecferr"
+
+[ -z "${dbname}" ] &&
+pd_errmsg "undefined database name" &&
+error="yes"
+
+[ -z "${dbuser}" ] &&
+pd_errmsg "undefined database user name" &&
+error="yes"
+
+[ -z "${dbpass}" ] &&
+pd_errmsg "null database user password" &&
+error="yes"
+
+[ -n "${error}" ] &&
+pd_exit "databasecferr"
+
+[ -w "${monitor}" ] ||
+monitor="/dev/null"
+
+print_schema() {
+	sed "/^\-\-/d
+s;\[\[MONITOR\]\];${monitor};g
+s;\[\[DATABASE\]\];${dbname};g
+s;\[\[USERNAME\]\];${dbuser};g
+s;\[\[USERPASS\]\];${dbpass};g" "$@"
+}
+
+[ -z "${create}" ] &&
+print_schema "$@" &&
+pd_exit 0
+
+. "${dbadmincf}" ||
+pd_exit "dbadmincferr"
+
+[ -z "${dbadminname}" ] &&
+pd_errmsg "undefined database administrator name" &&
+error="yes"
+
+[ -z "${dbadminpass}" ] &&
+pd_errmsg "null database administrator password" &&
+error="yes"
+
+[ -n "${error}" ] &&
+pd_exit "admincferr"
+
+export MYSQL_PWD="${dbadminpass}"
+print_schema "$@" | mysql --user="${dbadminname}"
+
+[ $? -ne 0 ] &&
+pd_exit "createdberr"
+
+pd_exit 0

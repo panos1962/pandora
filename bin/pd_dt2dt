@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+# Το παρόν πρόγραμμα δέχεται μια ημερομηνία σε κάποιο format (input format) και
+# την τυπώνει σε άλλο format (output format), σύμφωνα με τη λογική τής pandora
+# awk function "pd_dt2dt". Εάν δεν καθοριστούν συγκεκριμένα input/output…
+
+pd_tmpmax=0
+
+. "${PANDORA_BASEDIR:=/var/opt/pandora}/lib/pandora.sh" ||
+exit 2
+
+pd_usagemsg="[ -i format ] [ -o format ] [ date ]"
+
+pd_seterrcode \
+	"usage" \
+	"dterr" \
+	""
+
+eval set -- "$(pd_parseopts "i:o:" "" "$@")"
+[ $1 -ne 0 ] && pd_usage
+shift
+
+ifmt="YMD"
+ofmt="Y-M-D"
+
+error=
+
+for arg in "$@"
+do
+	case "${arg}" in
+	-i)
+		ifmt="$2"
+		shift 2
+		;;
+	-o)
+		ofmt="$2"
+		shift 2
+		;;
+	--)
+		shift
+		break
+		;;
+	esac
+done
+unset arg
+
+[ -n "${error}" ] &&
+pd_usage
+
+case $# in
+0)
+	date="$(date "+%Y%m%d")"
+	;;
+1)
+	date="$1"
+	;;
+*)
+	pd_usage
+	;;
+esac
+
+exec awk -v dt="${date}" -v ifmt="${ifmt}" -v ofmt="${ofmt}" \
+	-i "${PANDORA_BASEDIR}/lib/pandora.awk" 'BEGIN {
+	print pd_dt2dt(dt, ifmt, ofmt)
+	exit(0)
+}'

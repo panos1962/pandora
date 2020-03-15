@@ -1,0 +1,176 @@
+#!/usr/bin/env bash
+echo "NO ACTION" >&2
+exit 0
+
+progfull="$0"
+progname="$(basename "${progfull}")"
+
+[ ! "${progfull}" = "install/install" ] &&
+[ ! "${progfull}" = "./install/install" ] &&
+echo "${progname}: try 'sudo install/install'" &&
+exit 2
+
+[ "$(id -u)" != "0" ] &&
+echo "${progname}: try 'sudo ${progfull}'" >&2 &&
+exit 3
+
+usage() {
+	"usage: ${progname} [ -d directory ]" >&2
+	exit 1
+}
+
+basedir="${PANDORA_BASEDIR:=/var/opt/pandora}"
+test=
+
+rcfile="local/install.rc"
+[ -e "${rcfile}" ] &&
+! . "${rcfile}" &&
+echo "${progname}: ${rcfile}: cannot read file" >&2 &&
+exit 13
+
+error=
+
+while getopts ":d:T" opt
+do
+	case "${opt}" in
+	d)
+		basedir="${OPTARG}"
+		;;
+	T)
+		test="yes"
+		;;
+	\?)
+		echo "${progname}: ${OPTARG}: invalid option" >&2
+		error="yes"
+	esac
+done
+
+[ -n "${error}" ] &&
+usage
+
+shift $(expr "${OPTIND}" - 1)
+
+[ $# -ne 0 ] &&
+usage
+
+[[ ! "${basedir}" =~ ^/var/opt/[^/]+$ ]] &&
+echo "${progname}: ${basedir}: invalid base directory" >&2 &&
+exit 4
+
+[ -d "${basedir}" ] &&
+! rm -rf "${basedir}" &&
+echo "${progname}: ${basedir}: cannot remove" >&2 &&
+exit 5
+
+if [ -n "${test}" ]; then
+	rmshcmnt="cat"
+else
+	rmshcmnt="${basedir}/bin/pd_rmshcmnt"
+fi
+
+! mkdir -p -m 755 "${basedir}" &&
+! chmod 700 "${basedir}" &&
+exit 6
+
+for i in \
+	"bin" \
+	"lib" \
+	"lib/sqlplus" \
+	"lib/sqlcmd" \
+	"images"
+do
+	mkdir "${basedir}/${i}" ||
+	exit 7
+done
+
+cp "bin/pd_rmshcmnt" "${basedir}/bin/pd_rmshcmnt" ||
+exit 8
+
+# Copy if exists…
+
+cpifex() {
+	[ $# -ne 2 ] &&
+	return 0
+
+	[ ! -f "$1" ] &&
+	echo "${progname}: $1: file is missing" >&2 &&
+	return 0
+
+	cp "$1" "$2"
+}
+
+"${rmshcmnt}" lib/pandora.sh >"${basedir}/lib/pandora.sh" &&
+"${rmshcmnt}" lib/pandora.awk >"${basedir}/lib/pandora.awk" &&
+"${rmshcmnt}" bin/pd_sqlplus.sh >"${basedir}/bin/pd_sqlplus" &&
+cp lib/sqlplus/help.sh "${basedir}/lib/sqlplus/help.sh" &&
+"${rmshcmnt}" lib/sqlplus/settings.sh >"${basedir}/lib/sqlplus/settings.sh" &&
+"${rmshcmnt}" bin/pd_sqlcmd.sh >"${basedir}/bin/pd_sqlcmd" &&
+"${rmshcmnt}" lib/sqlcmd/util.sh >"${basedir}/lib/sqlcmd/util.sh" &&
+cp lib/sqlcmd/help.sh "${basedir}/lib/sqlcmd/help.sh" &&
+"${rmshcmnt}" lib/sqlcmd/settings.sh >"${basedir}/lib/sqlcmd/settings.sh" &&
+"${rmshcmnt}" bin/pd_awksql.sh >"${basedir}/bin/pd_awksql" &&
+"${rmshcmnt}" bin/pd_sendmail.sh >"${basedir}/bin/pd_sendmail" &&
+cp bin/pd_dt2dt "${basedir}/bin/pd_dt2dt" &&
+cp bin/pd_sha1 "${basedir}/bin/pd_sha1" &&
+cp lib/pandoraCore.js lib/pandoraServer.js lib/pandoraClient.js "${basedir}/lib" &&
+cp -r images "${basedir}" &&
+cp -r www "${basedir}" &&
+find "${basedir}" -type d -exec chmod 755 {} \; &&
+find "${basedir}" -type f -exec chmod 644 {} \;
+
+[ $? -ne 0 ] &&
+exit 9
+
+for i in \
+	"bin/pd_sqlplus" \
+	"bin/pd_sqlcmd" \
+	"bin/pd_awksql" \
+	"bin/pd_rmshcmnt" \
+	"bin/pd_dt2dt" \
+	"bin/pd_sendmail" \
+	"bin/pd_sha1" \
+	""
+do
+	[ -n "${i}" ] &&
+	! chmod 755 "${basedir}/${i}" &&
+	error="yes"
+done
+
+for i in \
+	""
+do
+	[ -n "${i}" ] &&
+	! chmod 644 "${basedir}/${i}" &&
+	error="yes"
+done
+
+[ -n "${error}" ] &&
+exit 10
+
+tmp="/tmp/$$pd"
+
+cleanup() {
+	rm -f "${tmp}"
+	return 0
+}
+
+trap "cleanup; echo \"${progname}: program interrupted\" >&2; exit 11" \
+SIGHUP SIGINT SIGQUIT SIGTERM
+
+sysenv="/etc/environment"
+profile="/etc/profile.d/pandora.sh"
+
+{
+	sed '/^PANDORA_BASEDIR=/d' "${sysenv}"
+	echo "PANDORA_BASEDIR=\"${basedir}\""
+} >"${tmp}" &&
+mv "${tmp}" "${sysenv}" &&
+cp lib/profile.sh "${profile}" &&
+chmod 644 "${profile}" &&
+chown root "${profile}" &&
+chgrp root "${profile}" &&
+cleanup &&
+exit 0
+
+cleanup
+exit 12

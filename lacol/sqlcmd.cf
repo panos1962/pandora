@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+server="winpak"
+port="12345"
+username="panos"
+userpass="XXX"
+database="WIN-PAK PRO"

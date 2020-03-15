@@ -1,0 +1,150 @@
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"
+" Copyright (C) 2019 Panos I. Papadopoulos <panos1962_AT_gmail_DOT_com>
+"
+" Το παρόν περιέχει vim directives που είναι χρήσιμα ως εργαλεία, αλλά και
+" ελληνικές εκδοχές πολλών εντολών του vim.
+"
+" Updated: 2019-12-31
+"
+""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+
+colorscheme desert
+
+" Αν θέλουμε να μεταφερόμαστε στο directory που βρίσκεται το αρχείο μπορούμε
+" να ενεργοποιήσουμε την παρακάτω εντολή.
+"autocmd VimEnter * silent! lcd %:p:h
+
+set shell=bash\ -i
+set guioptions-=T
+set guifont=Monospace\ 10.5
+set linespace=2
+set enc=utf-8
+set number
+set mouse=a
+syntax on
+behave mswin
+
+"set columns=120
+"set lines=32
+"winpos 130 440
+
+set columns=130
+set lines=35
+winpos 130 555
+
+set hlsearch
+highlight Normal guifg=White guibg=grey18
+
+highlight ColorColumn guibg=grey22
+set colorcolumn=80
+
+let cursorline = 0
+function! CursorLine()
+	if &cursorline == 1
+		set nocursorline
+		let cursorline = 0
+	else
+		set cursorline
+		let cursorline = 1
+	endif
+endfunction
+
+"Για να γράψουμε πάνω στο τρέχον target μετά από search
+"ΠΡΟΣΟΧΗ: Το επόμενο target δίδεται με // και όχι με /
+map <c-C> c//e
+
+"Για να διαγράψουμε το τρέχον target μετά από search
+"ΠΡΟΣΟΧΗ: Το επόμενο target δίδεται με // και όχι με /
+map <c-X> d//e
+
+"Όταν υπάρχουν μεγάλες γραμμές και βρισκόμαστε σε κατάσταση nowrap,
+"μπορούμε να χρησιμοποιήσουμε τα πλήκτα Tab και shift-Tab προκειμένου
+"να κάνουμε horizontal panning.
+
+map <Tab> 20zl
+map <S-Tab> 20zh
+
+map <silent> <F12> :call CursorLine()<CR>
+imap <silent> <F12> <ESC> :call CursorLine()<CR>a
+
+map <silent> <F1> :syntax sync fromstart<CR>
+imap <silent> <F1> <ESC> :syntax sync fromstart<CR>a
+
+map M :w<CR>:![ -s Makefile ] && make<CR>
+map Μ M
+map T :w<CR>:![ -s Makefile ] && make test<CR>
+map Τ T
+
+map C myy`yp
+map Ψ myy`yp
+map ρ r
+map Α A
+map Ρ R
+map ι i
+map ο o
+map Ο O
+map δ d
+map δδ dd
+map χ x
+map δς dw
+map δ΅ dW
+map Δ D
+map ΖΖ ZZ
+map υ y
+map Υ Y
+map ω v
+map Ω V
+map ς w
+map Σ W
+map ΅ W
+map θ u
+map Θ U
+map ψ c
+map ψς cw
+map Ξ J
+map ξ j
+map α a
+map β b
+map Β B
+map Γ G
+map π p
+map g :1
+map γ g
+map ¨ς :w
+map ¨: :q
+imap ~. ·
+imap ~... …
+imap ~< «
+imap ~> »
+imap ~ι ΐ
+imap ~υ ΰ
+imap ~e €
+imap ~E €
+imap ~Ε €
+imap ~ε €
+
+"Ο επόμενος πληκτρισμός μας δίνει μια σειρά από 32 overline characters
+"τους οποίους χρησιμοποιούμε συνήθως έναντι υπογράμμισης.
+imap ~_ ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾
+imap ~b ⚫
+imap ~B ~b
+imap ~β ~b
+imap ~Β ~b
+imap ~s ◾
+imap ~S ~s
+imap ~σ ~s
+imap ~Σ ~s
+imap ~d ◆
+imap ~D ~d
+imap ~δ ~d
+imap ~Δ ~d
+imap ~* ✶
+imap ~= ——
+map ~~ O#!/usr/bin/env ~####### @BEGIN#### @COPYRIGHT BEGIN## Copyright (C) :put =strftime('%Y')-JA Panos I. Papadopoulos <panos1962_AT_gmail_DOT_com>## @COPYRIGHT END#### @FILETYPE BEGIN## bash ## awk // php // javascipt ** css html ## makefile // C## @FILETYPE END#### @FILE BEGIN## FFFFFF ~= DDDDDD## @FILE END#### @DESCRIPTION BEGIN## @@@@@@## @DESCRIPTION END#### @HISTORY BEGIN## Created: :put =strftime('%Y-%m-%d')-Jo## @HISTORY END#### @END##~#:1A
+map ~+ /@HISTORY BEGIN$o## Updated: :put =strftime('%Y-%m-%d')-J
+imap ~# ###############################################################################@
+imap ~/ ///////////////////////////////////////////////////////////////////////////////@
+map ~/ :2,$s/#/\//g
+map ~* :2,$s/#/*/g
+map ~- :2,$s/#/-/g

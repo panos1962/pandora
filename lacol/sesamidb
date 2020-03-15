@@ -1,0 +1,39 @@
+###############################################################################@
+##
+## @BEGIN
+##
+## @COPYRIGHT BEGIN
+## Copyright (C) 2020 Panos I. Papadopoulos <panos1962_AT_gmail_DOT_com>
+## @COPYRIGHT END
+##
+## @FILETYPE BEGIN
+## ascii data
+## @FILETYPE END
+##
+## @FILE BEGIN
+## lacol/sesamidb —— Πρότυπο database access data file.
+## @FILE END
+##
+## @DESCRIPTION BEGIN
+## Το παρόν αρχείο αποτελεί πρότυπο για το database access data file "sesamidb"
+## που εδρεύει στο subdirectory "private" του "pandora" base directory.
+## Το αρχείο πριέχει γραμμές που αποτελούνται από δύο στήλες χωρισμένες μεταξύ
+## τους με tabs· η πρώτη στήλη περιέχει ένα database user name, ενώ η δεύτερη
+## περιέχει το αντίστοιχο database user password.
+##
+## Το αρχείο μπορεί να περιέχει κενές γραμμές ή γραμμές με λιγότερες από
+## δύο στήλες, οι οποίες αγνοούνται. Ακόμη, μπορούν να υπάρχουν γραμμές
+## με περισσότερες από δύο στήλες, όπου οι επιπλέον στήλες επίσης αγνοούνται
+## από το πρόγραμμα.
+## @DESCRIPTION END
+##
+## @HISTORY BEGIN
+## Created: 2020-03-13
+## @HISTORY END
+##
+## @END
+##
+###############################################################################@
+
+pandora	xxx!123@abc	# database user name γενικής χρήσης
+dimas	jQ@12#dFGJx928+	# database user name για θέματα δημοτικής αστυνομίας

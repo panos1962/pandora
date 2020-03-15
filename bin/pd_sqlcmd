@@ -1,0 +1,240 @@
+#!/usr/bin/env bash
+
+# Το παρόν πρόγραμμα υποκαθιστά το 'sqlcmd' της Microsoft. Ουσιαστικά αποτελεί
+# ένα intreface προς τον 'SQL Server', οπωσδήποτε με περιορισμένες δυνατότητες,
+# αλλά ίσως πιο βολικό για εργασίες που χρειαζόμαστε.
+#
+# Το πρόγραμμα by default χρησιμοποιείται σε batch mode, ωστόσο με την option
+# "--interactive" ή "-i" μπορούμε να το χρησιμοποιήσουμε σε interactive mode.
+# Αν, εκτός από διάφορες options, έχουν δοθεί και άλλα arguments στο command
+# line, τότε αυτά θεωρούνται ονόματα αρχείων που περιέχουν SQL scripts. Αν το
+# πρόγραμμα «τρέχει» σε batch mode, τότε τα scripts που έχουν καθοριστεί στο
+# command line εκτελούνται διαδοχικά και εφόσον δεν παρουσιαστούν σφάλματα,
+# το πρόγραμμα τερματίζεται με μηδενικό exit status, ενώ υπάρχουν σφάλματα στα
+# SQL scripts, το πρόγραμμα τερματίζεται άμεσα στο πρώτο σφάλμα με μη μηδενικό
+# exit status.
+#
+# Αν το πρόγραμμα «τρέχει» σε interactive mode και έχουν καθοριστεί SQL scripts
+# στο command line, τότε τα scripts εκτελούνται πριν τεθεί το πρόγραμμα σε
+# interactive mode, ασχέτως αν παρουσιάστηκαν σφάλματα ή όχι στα SQL scripts που
+# καθορίστηκαν στο command line.
+
+pd_tmpmax=1
+
+. "${PANDORA_BASEDIR:=/var/opt/pandora}/lib/pandora.sh" ||
+exit 2
+
+pd_usagemsg="$(pd_terr reset dim)[ $(pd_terr errmsg)\
+OPTIONS$(pd_terr reset dim) ] [ $(pd_terr errmsg)\
+FILE...$(pd_terr reset dim) ]$(pd_terr errmsg)\n
+Try '$(pd_terr)--help$(pd_terr errmsg)' for more"
+
+pd_seterrcode \
+	"usage" \
+	"missprm" \
+	"fserr" \
+	"sqlerr" \
+	"moderr" \
+	""
+
+. "${PANDORA_BASEDIR}/lib/sqlcmd/util.sh" ||
+pd_exit "fserr"
+
+eval set -- "$(pd_parseopts "?C:DS:p:U:P:d:s:thbiqv" \
+"help,conf:,debug,server:,port:,user:,password:,\
+database:,schema:,trim:,header:,colsep:,\
+batch,interactive,\
+quiet,silent,vocal,verbose" "$@")"
+[ $1 -ne 0 ] && pd_usage
+shift
+
+conf=
+debug=
+server=
+port="1433"
+username=
+userpass=
+database=
+schema="dbo"
+trimset "YES"
+headerset "-1"
+colsepset "TAB"
+interactive=
+verbose="yes"
+sqlopts=
+
+error=
+
+for arg in "$@"
+do
+	case "${arg}" in
+	-\?|--help)
+		. "${PANDORA_BASEDIR}/lib/sqlcmd/help.sh" 2>/dev/null &&
+		pd_exit
+
+		pd_exit "cannot read help text" "fserr"
+		;;
+	-C|--conf)
+		! . "$2" 2>/dev/null &&
+		pd_errmsg "$2: cannot read configuration file" &&
+		error="yes"
+
+		shift 2
+		;;
+	-D|--debug)
+		debug="yes"
+		shift 1
+		;;
+	--server)
+		server="$2"
+		shift 2
+		;;
+	--port)
+		port="$2"
+		shift 2
+		;;
+	--user)
+		username="$2"
+		shift 2
+		;;
+	--password)
+		userpass="$2"
+		shift 2
+		;;
+	-d|--database)
+		database="$2"
+		shift 2
+		;;
+	-s|--schema)
+		schema="$2"
+		shift 2
+		;;
+	--trim)
+		trimset "$2" || error="yes"
+		shift 2
+		;;
+	--header)
+		headerset "$2" || error="yes"
+		shift 2
+		;;
+	--colsep)
+		colsepset "$2" || error="yes"
+		shift 2
+		;;
+	-b|--batch)
+		interactive=
+		shift 1
+		;;
+	-i|--interactive)
+		interactive="yes"
+		shift 1
+		;;
+	-q|--quiet|--silent)
+		verbose=
+		shift 1
+		;;
+	-v|--vocal|--verbose)
+		verbose="yes"
+		shift 1
+		;;
+	--)
+		shift
+		break
+		;;
+	esac
+done
+unset arg
+
+[ -n "${error}" ] &&
+pd_usage
+
+[ -z "${server}" ] &&
+pd_errmsg "unspecified server" &&
+error="yes"
+
+! pd_isinteger "${port}" 1001 99999 &&
+pd_errmsg "${port}: invalid port number" &&
+error="yes"
+
+[ -z "${username}" ] &&
+pd_errmsg "user not specified" &&
+error="yes"
+
+[ -z "${userpass}" ] &&
+pd_errmsg "password not specified" &&
+error="yes"
+
+[ -n "${error}" ] &&
+pd_exit "missprm"
+
+tmp1="${pd_tmpname[1]}"
+pd_sigtrap
+
+. "${PANDORA_BASEDIR}/lib/sqlcmd/settings.sh" >"${tmp1}" ||
+pd_exit "fserr"
+
+[ -n "${database}" ] &&
+echo "USE [${database}];" >>"${tmp1}"
+
+[ -n "${schema}" ] &&
+echo "ALTER USER [${username}] WITH DEFAULT_SCHEMA = [${schema}];" >>"${tmp1}"
+
+if [ -n "${interactive}" ]; then
+	[ ! -t 0 ] &&
+	pd_errmsg "non-terminal input is not allowed in interactive mode" &&
+	error="yes"
+
+	[ ! -t 1 ] &&
+	pd_errmsg "non-terminal output is not allowed in interactive mode" &&
+	error="yes"
+
+	[ ! -t 2 ] &&
+	pd_errmsg "non-terminal error is not allowed in interactive mode" &&
+	error="yes"
+
+	[ -n "${error}" ] &&
+	pd_exit "moderr"
+
+	[ $# -gt 0 ] &&
+	! cat "$@" >>"${tmp1}" &&
+	pd_exit "fserr"
+else
+	! cat "$@" >>"${tmp1}" &&
+	pd_exit "fserr"
+fi
+
+sqlopts=
+sqlopts="${sqlopts} -m 1"		# do not print 
+sqlopts="${sqlopts} -r 1"		# error messages to standard error
+sqlopts="${sqlopts} -h ${header}"	# print column names header every 'header' rows
+
+[ -n "${trim}" ] &&
+sqlopts="${sqlopts} -W"			# remove trailing spaces
+
+[ -z "${interactive}" ] &&
+sqlopts="${sqlopts} -b" &&		# non-zero exit status on error
+sqlopts="${sqlopts} -i ${tmp1}"		# specify SQL query
+
+[ -n "${debug}" ] &&
+echo "QUERY:" &&
+cat "${tmp1}" &&
+echo -e "\nOPTIONS:
+${sqlopts}" &&
+pd_exit 0
+
+sqlcmd="${MSSQLTOOLS_BASEDIR:=/opt/mssql-tools/bin/sqlcmd}"
+
+error=0
+
+if [ -n "${interactive}" ]; then
+"${sqlcmd}" -S "${server},${port}" \
+-U "${username}" -P "${userpass}" \
+-s "${colsep}" ${sqlopts} -q "$(cat "${tmp1}")"
+
+else
+"${sqlcmd}" -S "${server},${port}" \
+-U "${username}" -P "${userpass}" \
+-s "${colsep}" ${sqlopts}
+fi || pd_exit "sqlerr"
+
+pd_exit 0
