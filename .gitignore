@@ -7,3 +7,5 @@ local/*
 private/*
 !private/README.txt
 node_modules/*
+
+www/main.css
