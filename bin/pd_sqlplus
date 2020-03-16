@@ -1,14 +1,35 @@
 #!/usr/bin/env bash
+
 ###############################################################################@
-#
-# Copyright (C) YYYY Panos I. Papadopoulos <panos1962_AT_gmail_DOT_com>
-#
+##
+## @BEGIN
+##
+## @COPYRIGHT BEGIN
+## Copyright (C) 2019 Panos I. Papadopoulos <panos1962_AT_gmail_DOT_com>
+## @COPYRIGHT END
+##
+## @FILETYPE BEGIN
+## php
+## @FILETYPE END
+##
+## @FILE BEGIN
 # pd_sqlplus -- Πρόκειται για ORACLE SQL client wrapper. Πιο συγκεκριμένα, το
 # παρόν πρόγραμμα αποτελεί ένα είδος front-end προς τον επίσημο ORACLE SQL
 # client "sqlplus".
-#
-# Updated: YYYY-MM-DD
-#
+## @FILE END
+##
+## @DESCRIPTION BEGIN
+# Το πρόγραμμα "pd_sqlplus" είναι ORACLE SQL client wrapper. Πιο συγκεκριμένα,
+## το παρόν πρόγραμμα αποτελεί ένα είδος front-end προς τον επίσημο ORACLE SQL
+## client "sqlplus".
+## @DESCRIPTION END
+##
+## @HISTORY BEGIN
+## Created: 2019-03-12
+## @HISTORY END
+##
+## @END
+##
 ###############################################################################@
 
 # Το παρόν πρόγραμμα υποκαθιστά το 'sqlplus' της ORACLE. Ουσιαστικά αποτελεί
@@ -68,7 +89,7 @@ pd_seterrcode \
 	"sqlexec" \
 	""
 
-eval set -- "$(pd_parseopts "hibF:D" \
+eval set -- "$(pd_parseopts "hibF:Dl:" \
 "help,interactive,batch,conf:,debug,\
 user:,host:,port:,sid:,database:,nlslang:,\
 linesize:,colsep:,null:" "$@")"
@@ -148,7 +169,7 @@ do
 		DBNLSLANG="$2"
 		shift 2
 		;;
-	--linesize)
+	-l|--linesize)
 		linesize="$2"
 		shift 2
 		;;
