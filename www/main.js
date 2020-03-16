@@ -106,7 +106,7 @@ const Test = {};
 
 Test.odosSetup = (callback) => {
 	$.post({
-		'url': 'http://localhost/cht/dimas/lib/odos_list.php',
+		'url': '/cht/dimas/lib/odos_list.php',
 		'success': (rsp) => {
 			Test.odosList = rsp.split(/[\n\r]+/);
 		},
