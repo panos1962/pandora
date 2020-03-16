@@ -13,9 +13,7 @@
 ## @FILETYPE END
 ##
 ## @FILE BEGIN
-# pd_sqlplus -- Πρόκειται για ORACLE SQL client wrapper. Πιο συγκεκριμένα, το
-# παρόν πρόγραμμα αποτελεί ένα είδος front-end προς τον επίσημο ORACLE SQL
-# client "sqlplus".
+# pd_sqlplus —— ORACLE SQL client wrapper.
 ## @FILE END
 ##
 ## @DESCRIPTION BEGIN
@@ -25,6 +23,7 @@
 ## @DESCRIPTION END
 ##
 ## @HISTORY BEGIN
+## Updated: 2020-03-12
 ## Created: 2019-03-12
 ## @HISTORY END
 ##
@@ -70,7 +69,7 @@ Specify database host name or host IP address\n
 Specify network port number for database server (default '1521')\n
 --sid=service_id
 Specify ORACLE service id (default 'orcl')\n
---database=database_name
+-d database_name, --database=database_name
 Specify database name\n
 --nlslang=database_language
 Specify database language (default 'AMERICAN_AMERICA.AL32UTF8')\n
@@ -78,6 +77,8 @@ Specify database language (default 'AMERICAN_AMERICA.AL32UTF8')\n
 Specify columns' separator string (default tab character)\n
 --null=null_string
 Specify null string representation (default Control-N)\n
+-l line_size, --linesize=line_size
+Specify maximum output line width\n
 Try '--help' for more"
 
 pd_seterrcode \
@@ -89,7 +90,7 @@ pd_seterrcode \
 	"sqlexec" \
 	""
 
-eval set -- "$(pd_parseopts "hibF:Dl:" \
+eval set -- "$(pd_parseopts "hibF:Dl:d:" \
 "help,interactive,batch,conf:,debug,\
 user:,host:,port:,sid:,database:,nlslang:,\
 linesize:,colsep:,null:" "$@")"
@@ -161,7 +162,7 @@ do
 		DBSID="$2"
 		shift 2
 		;;
-	--database)
+	-d|--database)
 		DBSCHEMA="$2"
 		shift 2
 		;;
