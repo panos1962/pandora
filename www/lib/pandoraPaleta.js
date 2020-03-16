@@ -580,9 +580,9 @@ pd.paleta = (opts) => {
 	append(pd.paletaPliktroDOM({
 		'special': 'BACKSPACE',
 		'title': 'Backspace',
-		'text': '&#x27A0;',
+		'text': '<div class="pnd-flip180">&#x27A0;</div>',
 		'style': 'pnd-paletaBackspaceKey',
-	}).addClass('pandoraFlip180')).
+	})).
 	append(pd.paletaPliktroDOM({
 		'special': 'TOGGLE',
 		'title': 'Καθαρισμός/Επαναφορά τιμής πεδίου',
