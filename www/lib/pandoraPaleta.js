@@ -301,7 +301,6 @@ pd.paletaCandiEpilogi = (candiDOM) => {
 	let monitorDOM = paletaDOM.children('.pnd-paletaMonitor');
 	let zoomDOM = paletaDOM.children('.pnd-paletaZoom');
 	let inputDOM = paletaDOM.children('.pnd-paletaInput');
-	//let curVal = inputDOM.val();
 	let ante = inputDOM.data('ante');
 	let post = inputDOM.data('post');
 	let text = candiDOM.text();
