@@ -295,25 +295,25 @@ pd.paletaCandiEpilogi = (candiDOM) => {
 	if (!helper)
 	return pd.paletaEpilogi(candiDOM, paletaDOM);
 
+	if (typeof(helper) === 'function')
+	return helper(candiDOM, paletaDOM);
+
 	if (typeof(helper) === 'string')
 	pd.fyiMessage(helper);
 
 	let monitorDOM = paletaDOM.children('.pnd-paletaMonitor');
 	let zoomDOM = paletaDOM.children('.pnd-paletaZoom');
-	let inputDOM = paletaDOM.children('.pnd-paletaInput');
-	let ante = inputDOM.data('ante');
-	let post = inputDOM.data('post');
+	let ante = paletaDOM.data('ante');
+	let post = paletaDOM.data('post');
 	let text = candiDOM.text();
+	let inputDOM = paletaDOM.children('.pnd-paletaInput');
 
 	text = text.trim();
 
-	if (text)
-	text += ' ';
-
-	if (ante)
+	if (ante !== undefined)
 	text = ante + text;
 
-	if (post)
+	if (post !== undefined)
 	text = text + post;
 
 	zoomDOM.empty();
@@ -321,6 +321,10 @@ pd.paletaCandiEpilogi = (candiDOM) => {
 	inputDOM.
 	data('prev', text).
 	val(text);
+
+	if (typeof(helper) === 'string')
+	pd.fyiMessage(helper);
+console.log('>>' + text + '<<');
 
 	if (inputDOM.hasClass('pnd-paletaInputVisible'))
 	inputDOM.focus();
@@ -503,6 +507,12 @@ pd.paleta = (opts) => {
 
 	if (opts.hasOwnProperty('helper'))
 	paletaDOM.data('helper', opts.helper);
+
+	if (opts.hasOwnProperty('ante'))
+	paletaDOM.data('ante', opts.ante);
+
+	if (opts.hasOwnProperty('post'))
+	paletaDOM.data('post', opts.post);
 
 	$('<div>').
 	addClass('pnd-paletaKeyboard').
