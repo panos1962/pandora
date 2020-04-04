@@ -27,7 +27,6 @@ message file[s]
 pd_seterrcode \
 	"nosender" \
 	"norecipient" \
-	"nomessage" \
 	"mailerror" \
 	""
 
@@ -37,16 +36,20 @@ tmp2="${pd_tmpname[2]}"
 pd_sigtrap
 
 eval set -- "$(pd_parseopts \
-"f:t:r:s:m:" \
-"from:,sender:,to:,recipient:,subject:,message:" "$@")"
+"f:t:r:c:b:s:m:a:" \
+"from:,sender:,to:,recipient:,cc:,carbon:,bcc:,blind:,\
+subject:,message:,attach:" "$@")"
 [ $1 -ne 0 ] && pd_usage
 shift
 
-recipient=
 sender=
+recipient=
+carbon=
+blind=
 subject=
 message=
 message_set=
+attach=
 
 error=
 
@@ -64,6 +67,16 @@ do
 		shift 2
 		;;
 
+	-c|--cc|--copy)
+		carbon="$2"
+		shift 2
+		;;
+
+	-b|--bcc|--blind)
+		blind="$2"
+		shift 2
+		;;
+
 	-s|--subject)
 		subject="$2"
 		shift 2
@@ -74,6 +87,12 @@ do
 		message_set="yes"
 		shift 2
 		;;
+
+	-a|--attach)
+		attach="${attach} $2"
+		shift 2
+		;;
+
 	--)
 		shift
 		;;
@@ -101,26 +120,82 @@ else
 	echo "${message}"
 fi >"${tmp1}"
 
-[ ! -s "${tmp1}" ] &&
-pd_errmsg "null message body" &&
-pd_exit "nomessage"
+boundary="19032019ABCDE"
 
-cat >"${tmp2}" <<+++
-To: ${recipient}
-From: ${sender}
-Subject: ${subject}
+echo "From: ${sender}
+To: ${recipient}" >"${tmp2}"
+
+echo ">>${carbon}<<" >&2
+[ -n "${carbon}" ] &&
+echo "Cc: ${carbon}" >>"${tmp2}"
+
+[ -n "${blind}" ] &&
+echo "Bcc: ${blind}" >>"${tmp2}"
+
+echo "Subject: ${subject}
 MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=\"${boundary}\"" >>"${tmp2}"
+
+if [ -s "${tmp1}" ]; then
+	echo "
+--${boundary}
 Content-Type: text/html; charset=UTF-8
 Content-Disposition: inline
+
 <html>
-<body>
-+++
+<body>"
+	cat "${tmp1}" >>${tmp2}
+	echo "</body>
+</html>
 
-cat "${tmp1}" >>${tmp2}
+--${boundary}"
+fi >>${tmp2}
 
-echo "</pre>
-</body>
-</html>" >>${tmp2}
+if [ -n "${attach}" ]; then
+	for i in ${attach}
+	do
+		[ ! -f "${i}" ] &&
+		pd_errmsg "${i}: file not found" &&
+		error="yes" &&
+		continue
+
+		[ ! -s "${i}" ] &&
+		pd_errmsg "${i}: file is empty (ignored)" &&
+		continue
+
+		[ ! -r "${i}" ] &&
+		pd_errmsg "${i}: cannot read file" &&
+		error="yes" &&
+		continue
+
+		case "${i}" in
+		*.xls)
+			tipos="application/vnd.ms-excel"
+			;;
+		*.txt)
+			tipos="text/plain"
+			;;
+		*.pdf)
+			tipos="application/pdf"
+			;;
+		*)
+			pd_errmsg "${i}: unsupported file extension" &&
+			error="yes" &&
+			continue
+			;;
+		esac
+			
+		echo "
+--${boundary}
+Content-Type: ${tipos}; charset=UTF-8
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename=\"${i}\"
+"
+		base64 "${i}"
+		echo "
+--${boundary}"
+	done
+fi >>"${tmp2}"
 
 ! sendmail -t <"${tmp2}" &&
 pd_errmsg "sendmail failure" &&
