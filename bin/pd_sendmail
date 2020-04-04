@@ -125,7 +125,6 @@ boundary="19032019ABCDE"
 echo "From: ${sender}
 To: ${recipient}" >"${tmp2}"
 
-echo ">>${carbon}<<" >&2
 [ -n "${carbon}" ] &&
 echo "Cc: ${carbon}" >>"${tmp2}"
 
