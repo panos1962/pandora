@@ -21,10 +21,10 @@
 ## front-end interface προς το πρόγραμμα "sendmail". Ως γνωστόν το "sendmail"
 ## είναι σχετικά χαμηλού επιπέδου δρομολογητής μηνυμάτων, πράγμα που σημαίνει
 ## ότι παρουσιάζει κάποιες ελλείψεις σε ευκολίες αποστολής μηνυμάτων, π.χ. δεν
-## παρέχεται η δυνατότητα αποστολής συνημμένων αρχείων μέσω κάποιων command
-## line options κλπ. Το "pd_sendmail" καλύπτει αρκετές από τις ελλείψεις του
-## "sendmail" προετοιμάζοντας ένα RFC822 μήνυμα το οποίο κατόπιν προωθεί στο
-## "sendmail" πτοκειμένου το μήνυμα να δρομολογηθεί στους παραλήπτες.
+## παρέχει τη δυνατότητα αποστολής συνημμένων αρχείων κλπ. Το "pd_sendmail"
+## καλύπτει κάποιες από αυτές τις ελλείψεις του "sendmail" προετοιμάζοντας
+## ένα RFC822 μήνυμα το οποίο κατόπιν προωθεί στο "sendmail" πτοκειμένου το
+## μήνυμα να δρομολογηθεί στους παραλήπτες.
 ## @DESCRIPTION END
 ##
 ## @HISTORY BEGIN
@@ -55,6 +55,7 @@ $(pd_tput bold fyellow)-c$(pd_tput) Cc...
 $(pd_tput bold fyellow)-b$(pd_tput) Bcc...
 $(pd_tput bold fyellow)-s$(pd_tput) subject
 $(pd_tput bold fyellow)-m$(pd_tput) message
+$(pd_tput bold fyellow)-p$(pd_tput)
 $(pd_tput bold fyellow)-a$(pd_tput) file...
 
 
@@ -91,7 +92,7 @@ blind=
 subject=
 message=
 message_set=
-tipos="html"
+tipos="text/html"
 attach=
 
 error=
@@ -132,7 +133,7 @@ do
 		;;
 
 	-p|--text)
-		tipos="plain"
+		tipos="text/plain"
 		shift 1
 		;;
 
@@ -160,7 +161,7 @@ pd_errmsg "no recipient address" &&
 pd_exit "norecipient"
 
 # Στο σημείο αυτό εκκινεί η σύνθεση του μηνύματος. Γενικώς θα χρειαστούμε ένα
-# boundary string το οποίο ορίζουμε ευθύς αμέσως.
+# (τυχαίο) boundary string το οποίο ορίζουμε ευθύς αμέσως.
 
 boundary="7d594ba65fa297f034307627da50903c9306eeb3"
 
@@ -244,10 +245,13 @@ do
 	error="yes" &&
 	continue
 
+	[ -n "${error}" ] &&
+	continue
+
 	echo "--${boundary}
 Content-Type: ${t}; charset=UTF-8
 Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename=\"${i}\"
+Content-Disposition: attachment; filename=${i}
 "
 	cat "${tmp1}"
 done >"${tmp3}"
@@ -293,7 +297,7 @@ Content-Type: multipart/mixed; boundary=${boundary}
 
 	[ -s "${tmp1}" ] &&
 	echo "--${boundary}
-Content-Type: text/${tipos}; charset=UTF-8
+Content-Type: ${tipos}; charset=UTF-8
 Content-Disposition: inline
 " &&
 	cat "${tmp1}"
