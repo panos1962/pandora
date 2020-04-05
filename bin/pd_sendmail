@@ -1,9 +1,45 @@
 #!/usr/bin/env bash
 
+###############################################################################@
+##
+## @BEGIN
+##
+## @COPYRIGHT BEGIN
+## Copyright (C) 2020 Panos I. Papadopoulos <panos1962_AT_gmail_DOT_com>
+## @COPYRIGHT END
+##
+## @FILETYPE BEGIN
+## bash
+## @FILETYPE END
+##
+## @FILE BEGIN
+## bin/pd_sendmail —— sendmail wrapper
+## @FILE END
+##
+## @DESCRIPTION BEGIN
+## Το πρόγραμμα "pd_sendmail" αποτελεί έναν sendmail wrapper, δηλαδή ένα
+## front-end interface προς το πρόγραμμα "sendmail". Ως γνωστόν το "sendmail"
+## είναι σχετικά χαμηλού επιπέδου δρομολογητής μηνυμάτων, πράγμα που σημαίνει
+## ότι παρουσιάζει κάποιες ελλείψεις σε ευκολίες αποστολής μηνυμάτων, π.χ. δεν
+## παρέχεται η δυνατότητα αποστολής συνημμένων αρχείων μέσω κάποιων command
+## line options κλπ. Το "pd_sendmail" καλύπτει αρκετές από τις ελλείψεις του
+## "sendmail" προετοιμάζοντας ένα RFC822 μήνυμα το οποίο κατόπιν προωθεί στο
+## "sendmail" πτοκειμένου το μήνυμα να δρομολογηθεί στους παραλήπτες.
+## @DESCRIPTION END
+##
+## @HISTORY BEGIN
+## Updated: 2020-04-05
+## Created: 2020-03-02
+## @HISTORY END
+##
+## @END
+##
+###############################################################################@
+
 [ -z "${PANDORA_BASEDIR}" ] &&
 PANDORA_BASEDIR="/var/opt/pandora"
 
-pd_tmpmax=2
+pd_tmpmax=3
 
 ! . "${PANDORA_BASEDIR}/lib/pandora.sh" &&
 exit 1
@@ -14,9 +50,12 @@ $(pd_tput reset dim)] [$(pd_tput reset bold fblue)ARGS$(pd_tput reset dim)]
 $(pd_tput dim)Options
 -------$(pd_tput)
 $(pd_tput bold fyellow)-f$(pd_tput) from
-$(pd_tput bold fyellow)-t$(pd_tput) to
+$(pd_tput bold fyellow)-t$(pd_tput) to...
+$(pd_tput bold fyellow)-c$(pd_tput) Cc...
+$(pd_tput bold fyellow)-b$(pd_tput) Bcc...
 $(pd_tput bold fyellow)-s$(pd_tput) subject
 $(pd_tput bold fyellow)-m$(pd_tput) message
+$(pd_tput bold fyellow)-a$(pd_tput) file...
 
 
 $(pd_tput dim)Arguments
@@ -27,18 +66,21 @@ message file[s]
 pd_seterrcode \
 	"nosender" \
 	"norecipient" \
+	"messagerror" \
+	"attacherror" \
 	"mailerror" \
 	""
 
 tmp1="${pd_tmpname[1]}"
 tmp2="${pd_tmpname[2]}"
+tmp3="${pd_tmpname[3]}"
 
 pd_sigtrap
 
 eval set -- "$(pd_parseopts \
-"f:t:r:c:b:s:m:a:" \
+"f:t:r:c:b:s:m:pa:" \
 "from:,sender:,to:,recipient:,cc:,carbon:,bcc:,blind:,\
-subject:,message:,attach:" "$@")"
+subject:,message:,text,attach:" "$@")"
 [ $1 -ne 0 ] && pd_usage
 shift
 
@@ -49,6 +91,7 @@ blind=
 subject=
 message=
 message_set=
+tipos="html"
 attach=
 
 error=
@@ -63,17 +106,17 @@ do
 		;;
 
 	-t|-r|--to|--recipient)
-		recipient="$2"
+		recipient="$(pd_push "${recipient}" "$2" ",")"
 		shift 2
 		;;
 
 	-c|--cc|--copy)
-		carbon="$2"
+		carbon="$(pd_push "${carbon}" "$2" ",")"
 		shift 2
 		;;
 
 	-b|--bcc|--blind)
-		blind="$2"
+		blind="$(pd_push "${blind}" "$2" ",")"
 		shift 2
 		;;
 
@@ -88,8 +131,13 @@ do
 		shift 2
 		;;
 
+	-p|--text)
+		tipos="plain"
+		shift 1
+		;;
+
 	-a|--attach)
-		attach="${attach} $2"
+		attach="$(pd_push "${attach}" "$2")"
 		shift 2
 		;;
 
@@ -111,93 +159,150 @@ pd_exit "nosender"
 pd_errmsg "no recipient address" &&
 pd_exit "norecipient"
 
-[ -z "${subject}" ] &&
-subject="Ενημέρωση"
+# Στο σημείο αυτό εκκινεί η σύνθεση του μηνύματος. Γενικώς θα χρειαστούμε ένα
+# boundary string το οποίο ορίζουμε ευθύς αμέσως.
 
-if [ -z "${message_set}" ]; then
-	cat $*
-else
-	echo "${message}"
-fi >"${tmp1}"
+boundary="7d594ba65fa297f034307627da50903c9306eeb3"
 
-boundary="19032019ABCDE"
+# Σε πρώτη φάση δημιουργούμε εκείνο το μέρος του μηνύματος το οποίο αφορά στα
+# συνημμένα αρχεία.
 
-echo "From: ${sender}
-To: ${recipient}" >"${tmp2}"
+for i in ${attach}
+do
+	[ ! -f "${i}" ] &&
+	pd_errmsg "${i}: file not found" &&
+	error="yes" &&
+	continue
 
-[ -n "${carbon}" ] &&
-echo "Cc: ${carbon}" >>"${tmp2}"
+	[ ! -s "${i}" ] &&
+	pd_errmsg "${i}: file is empty (ignored)" &&
+	continue
 
-[ -n "${blind}" ] &&
-echo "Bcc: ${blind}" >>"${tmp2}"
+	[ ! -r "${i}" ] &&
+	pd_errmsg "${i}: cannot read file" &&
+	error="yes" &&
+	continue
 
-echo "Subject: ${subject}
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary=\"${boundary}\"" >>"${tmp2}"
+	case "${i^^}" in
+	*.ODT)
+		t="application/vnd.oasis.opendocument.text"
+		;;
 
-if [ -s "${tmp1}" ]; then
-	echo "
---${boundary}
-Content-Type: text/html; charset=UTF-8
-Content-Disposition: inline
+	*.ODS)
+		t="application/vnd.oasis.opendocument.spreadsheet"
+		;;
 
-<html>
-<body>"
-	cat "${tmp1}" >>${tmp2}
-	echo "</body>
-</html>
+	*.XLS)
+		t="application/vnd.ms-excel"
+		;;
 
---${boundary}"
-fi >>${tmp2}
+	*.XLSX)
+		t="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet "
+		;;
 
-if [ -n "${attach}" ]; then
-	for i in ${attach}
-	do
-		[ ! -f "${i}" ] &&
-		pd_errmsg "${i}: file not found" &&
+	*.TXT)
+		t="text/plain"
+		;;
+
+	*.PDF)
+		t="application/pdf"
+		;;
+
+	*.JPG|JPEG)
+		t="application/jpeg"
+		;;
+
+	*.GIF)
+		t="application/gif"
+		;;
+
+	*.PNG)
+		t="application/png"
+		;;
+
+	*.SVG)
+		t="application/svg+xml"
+		;;
+
+	*.ZIP)
+		t="application/zip"
+		;;
+
+	*.7Z)
+		t="application/x-7z-compressed"
+		;;
+
+	*)
+		pd_errmsg "${i}: unsupported file type" &&
 		error="yes" &&
 		continue
+		;;
+	esac
 
-		[ ! -s "${i}" ] &&
-		pd_errmsg "${i}: file is empty (ignored)" &&
-		continue
+	! base64 "${i}" >"${tmp1}" &&
+	pd_errmsg "${i}: base64 encode failed" &&
+	error="yes" &&
+	continue
 
-		[ ! -r "${i}" ] &&
-		pd_errmsg "${i}: cannot read file" &&
-		error="yes" &&
-		continue
-
-		case "${i}" in
-		*.xls)
-			tipos="application/vnd.ms-excel"
-			;;
-		*.txt)
-			tipos="text/plain"
-			;;
-		*.pdf)
-			tipos="application/pdf"
-			;;
-		*)
-			pd_errmsg "${i}: unsupported file extension" &&
-			error="yes" &&
-			continue
-			;;
-		esac
-			
-		echo "
---${boundary}
-Content-Type: ${tipos}; charset=UTF-8
+	echo "--${boundary}
+Content-Type: ${t}; charset=UTF-8
 Content-Transfer-Encoding: base64
 Content-Disposition: attachment; filename=\"${i}\"
 "
-		base64 "${i}"
-		echo "
---${boundary}"
-	done
-fi >>"${tmp2}"
+	cat "${tmp1}"
+done >"${tmp3}"
 
-! sendmail -t <"${tmp2}" &&
+unset i
+unset t
+
+[ -n "${error}" ] &&
+pd_exit "attacherror"
+
+# Έχουμε τελειώσει με τα συνημμένα αρχεία και ήρθε η ώρα να ασχοληθούμε με
+# το κυρίως σώμα του μηνύματος.
+
+if [ -z "${message_set}" ]; then
+	cat $* ||
+	error="yes"
+elif [ -n "${message}" ]; then
+	echo "${message}"
+fi >"${tmp1}"
+
+[ -n "${error}" ] &&
+pd_exit "messagerror"
+
+# Έχουμε τελειώσει με τα συνημμένα αρχεία και με το κύριο σώμα του
+# μηνύματος και είναι πλέον η ώρα να αποστείλουμε το μήνυμα.
+
+{
+	echo "From: ${sender}
+To: ${recipient}"
+
+	[ -n "${carbon}" ] &&
+	echo "Cc: ${carbon}"
+
+	[ -n "${blind}" ] &&
+	echo "Bcc: ${blind}"
+
+	[ -n "${subject}" ] &&
+	echo "Subject: ${subject}"
+
+	echo "MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=${boundary}
+"
+
+	[ -s "${tmp1}" ] &&
+	echo "--${boundary}
+Content-Type: text/${tipos}; charset=UTF-8
+Content-Disposition: inline
+" &&
+	cat "${tmp1}"
+
+	cat "${tmp3}"
+	echo "--${boundary}--"
+} |
+sendmail -t &&
+pd_exit 0
+
 pd_errmsg "sendmail failure" &&
 pd_exit "mailerror"
-
-pd_exit 0
