@@ -23,7 +23,7 @@
 ## ότι παρουσιάζει κάποιες ελλείψεις σε ευκολίες αποστολής μηνυμάτων, π.χ. δεν
 ## παρέχει τη δυνατότητα αποστολής συνημμένων αρχείων κλπ. Το "pd_sendmail"
 ## καλύπτει κάποιες από αυτές τις ελλείψεις του "sendmail" προετοιμάζοντας
-## ένα RFC822 μήνυμα το οποίο κατόπιν προωθεί στο "sendmail" πτοκειμένου το
+## ένα RFC822 μήνυμα το οποίο κατόπιν προωθεί στο "sendmail" προκειμένου το
 ## μήνυμα να δρομολογηθεί στους παραλήπτες.
 ## @DESCRIPTION END
 ##
@@ -39,32 +39,34 @@
 [ -z "${PANDORA_BASEDIR}" ] &&
 PANDORA_BASEDIR="/var/opt/pandora"
 
-pd_tmpmax=3
+pd_tmpmax=2
 
 ! . "${PANDORA_BASEDIR}/lib/pandora.sh" &&
 exit 1
 
+unset pd_errlevel
 pd_usagemsg="$(pd_tput reset dim)[$(pd_tput reset bold fblue)OPTIONS\
 $(pd_tput reset dim)] [$(pd_tput reset bold fblue)ARGS$(pd_tput reset dim)]
 
 $(pd_tput dim)Options
--------$(pd_tput)
-$(pd_tput bold fyellow)-f$(pd_tput) from
-$(pd_tput bold fyellow)-t$(pd_tput) to...
-$(pd_tput bold fyellow)-c$(pd_tput) Cc...
-$(pd_tput bold fyellow)-b$(pd_tput) Bcc...
-$(pd_tput bold fyellow)-s$(pd_tput) subject
-$(pd_tput bold fyellow)-m$(pd_tput) message
-$(pd_tput bold fyellow)-p$(pd_tput)
-$(pd_tput bold fyellow)-a$(pd_tput) file...
+‾‾‾‾‾‾‾$(pd_tput)
+$(pd_tput bold fyellow)-f$(pd_tput) address $(pd_tput dim)(sender address)$(pd_tput)
+$(pd_tput bold fyellow)-t$(pd_tput) to $(pd_tput dim)(recipient address)...$(pd_tput)
+$(pd_tput bold fyellow)-c$(pd_tput) Cc $(pd_tput dim)(carbon copy)...$(pd_tput)
+$(pd_tput bold fyellow)-b$(pd_tput) Bcc $(pd_tput dim)(blind carbon copy)...$(pd_tput)
+$(pd_tput bold fyellow)-s$(pd_tput) subject$(pd_tput)
+$(pd_tput bold fyellow)-m$(pd_tput) message$(pd_tput)
+$(pd_tput bold fyellow)-n$(pd_tput) $(pd_tput dim)(null message body)$(pd_tput)
+$(pd_tput bold fyellow)-p$(pd_tput) $(pd_tput dim)(plain text)$(pd_tput)
+$(pd_tput bold fyellow)-a$(pd_tput) file $(pd_tput dim)(attached file)...$(pd_tput)
 
 
 $(pd_tput dim)Arguments
----------$(pd_tput)
+‾‾‾‾‾‾‾‾‾$(pd_tput)
 message file[s]
 "
-
 pd_seterrcode \
+	"dataerror" \
 	"nosender" \
 	"norecipient" \
 	"messagerror" \
@@ -74,16 +76,23 @@ pd_seterrcode \
 
 tmp1="${pd_tmpname[1]}"
 tmp2="${pd_tmpname[2]}"
-tmp3="${pd_tmpname[3]}"
 
 pd_sigtrap
 
 eval set -- "$(pd_parseopts \
-"f:t:r:c:b:s:m:pa:" \
+"f:t:r:c:b:s:m:npa:" \
 "from:,sender:,to:,recipient:,cc:,carbon:,bcc:,blind:,\
-subject:,message:,text,attach:" "$@")"
+subject:,message:,null,text,attach:" "$@")"
 [ $1 -ne 0 ] && pd_usage
 shift
+
+check_email() {
+	pd_isemail "$1" &&
+	return 0
+
+	pd_errmsg "${1}: invalid email address"
+	return 1
+}
 
 sender=
 recipient=
@@ -102,22 +111,30 @@ do
 
 	case "${arg}" in
 	-f|--from|--sender)
-		sender="$2"
+		check_email "$2" &&
+		sender="$2" ||
+		error="yes"
 		shift 2
 		;;
 
 	-t|-r|--to|--recipient)
-		recipient="$(pd_push "${recipient}" "$2" ",")"
+		check_email "$2" &&
+		recipient="$(pd_push "${recipient}" "$2" ",")" ||
+		error="yes"
 		shift 2
 		;;
 
 	-c|--cc|--copy)
-		carbon="$(pd_push "${carbon}" "$2" ",")"
+		check_email "$2" &&
+		carbon="$(pd_push "${carbon}" "$2" ",")" ||
+		error="yes"
 		shift 2
 		;;
 
 	-b|--bcc|--blind)
-		blind="$(pd_push "${blind}" "$2" ",")"
+		check_email "$2" &&
+		blind="$(pd_push "${blind}" "$2" ",")" ||
+		error="yes"
 		shift 2
 		;;
 
@@ -130,6 +147,12 @@ do
 		message="$2"
 		message_set="yes"
 		shift 2
+		;;
+
+	-n|--null)
+		message=
+		message_set="yes"
+		shift 1
 		;;
 
 	-p|--text)
@@ -150,7 +173,7 @@ done
 unset arg
 
 [ -n "${error}" ] &&
-pd_usage
+pd_exit "dataerror"
 
 [ -z "${sender}" ] &&
 pd_errmsg "no sender address" &&
@@ -168,98 +191,100 @@ boundary="7d594ba65fa297f034307627da50903c9306eeb3"
 # Σε πρώτη φάση δημιουργούμε εκείνο το μέρος του μηνύματος το οποίο αφορά στα
 # συνημμένα αρχεία.
 
-for i in ${attach}
-do
-	[ ! -f "${i}" ] &&
-	pd_errmsg "${i}: file not found" &&
-	error="yes" &&
-	continue
+attached_files() {
+	local f=
+	local typ=
+	local err=0
 
-	[ ! -s "${i}" ] &&
-	pd_errmsg "${i}: file is empty (ignored)" &&
-	continue
-
-	[ ! -r "${i}" ] &&
-	pd_errmsg "${i}: cannot read file" &&
-	error="yes" &&
-	continue
-
-	case "${i^^}" in
-	*.ODT)
-		t="application/vnd.oasis.opendocument.text"
-		;;
-
-	*.ODS)
-		t="application/vnd.oasis.opendocument.spreadsheet"
-		;;
-
-	*.XLS)
-		t="application/vnd.ms-excel"
-		;;
-
-	*.XLSX)
-		t="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet "
-		;;
-
-	*.TXT)
-		t="text/plain"
-		;;
-
-	*.PDF)
-		t="application/pdf"
-		;;
-
-	*.JPG|JPEG)
-		t="application/jpeg"
-		;;
-
-	*.GIF)
-		t="application/gif"
-		;;
-
-	*.PNG)
-		t="application/png"
-		;;
-
-	*.SVG)
-		t="application/svg+xml"
-		;;
-
-	*.ZIP)
-		t="application/zip"
-		;;
-
-	*.7Z)
-		t="application/x-7z-compressed"
-		;;
-
-	*)
-		pd_errmsg "${i}: unsupported file type" &&
-		error="yes" &&
+	for f in ${attach}
+	do
+		[ ! -f "${f}" ] &&
+		pd_errmsg "${f}: file not found" &&
+		err=1 &&
 		continue
-		;;
-	esac
 
-	! base64 "${i}" >"${tmp1}" &&
-	pd_errmsg "${i}: base64 encode failed" &&
-	error="yes" &&
-	continue
+		[ ! -s "${f}" ] &&
+		pd_errmsg "${f}: file is empty (ignored)" &&
+		continue
 
-	[ -n "${error}" ] &&
-	continue
+		[ ! -r "${f}" ] &&
+		pd_errmsg "${f}: cannot read file" &&
+		err=1 &&
+		continue
 
-	echo "--${boundary}
-Content-Type: ${t}; charset=UTF-8
+		case "${f^^}" in
+		*.ODT)
+			typ="application/vnd.oasis.opendocument.text"
+			;;
+
+		*.ODS)
+			typ="application/vnd.oasis.opendocument.spreadsheet"
+			;;
+
+		*.XLS)
+			typ="application/vnd.ms-excel"
+			;;
+
+		*.XLSX)
+			typ="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet "
+			;;
+
+		*.TXT)
+			typ="text/plain"
+			;;
+
+		*.PDF)
+			typ="application/pdf"
+			;;
+
+		*.JPG|JPEG)
+			typ="application/jpeg"
+			;;
+
+		*.GIF)
+			typ="application/gif"
+			;;
+
+		*.PNG)
+			typ="application/png"
+			;;
+
+		*.SVG)
+			typ="application/svg+xml"
+			;;
+
+		*.ZIP)
+			typ="application/zip"
+			;;
+
+		*.7Z)
+			typ="application/x-7z-compressed"
+			;;
+
+		*)
+			pd_errmsg "${f}: unsupported file type" &&
+			err=1 &&
+			continue
+			;;
+		esac
+
+		echo "--${boundary}
+Content-Type: ${typ}; charset=UTF-8
 Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename=${i}
+Content-Disposition: attachment; filename=${f}
 "
-	cat "${tmp1}"
-done >"${tmp3}"
 
-unset i
-unset t
+		base64 "${f}" &&
+		continue
 
-[ -n "${error}" ] &&
+		pd_errmsg "${f}: base64 encode failed"
+		err=1
+	done
+
+	return ${err}
+}
+
+attached_files >"${tmp1}" ||
 pd_exit "attacherror"
 
 # Έχουμε τελειώσει με τα συνημμένα αρχεία και ήρθε η ώρα να ασχοληθούμε με
@@ -270,12 +295,12 @@ if [ -z "${message_set}" ]; then
 	error="yes"
 elif [ -n "${message}" ]; then
 	echo "${message}"
-fi >"${tmp1}"
+fi >"${tmp2}"
 
 [ -n "${error}" ] &&
 pd_exit "messagerror"
 
-# Έχουμε τελειώσει με τα συνημμένα αρχεία και με το κύριο σώμα του
+# Έχουμε τελειώσει με τα συνημμένα αρχεία και με το κυρίως σώμα του
 # μηνύματος και είναι πλέον η ώρα να αποστείλουμε το μήνυμα.
 
 {
@@ -295,17 +320,15 @@ To: ${recipient}"
 Content-Type: multipart/mixed; boundary=${boundary}
 "
 
-	[ -s "${tmp1}" ] &&
+	[ -s "${tmp2}" ] &&
 	echo "--${boundary}
 Content-Type: ${tipos}; charset=UTF-8
 Content-Disposition: inline
 " &&
+	cat "${tmp2}"
 	cat "${tmp1}"
-
-	cat "${tmp3}"
 	echo "--${boundary}--"
-} |
-sendmail -t &&
+} | sendmail -t &&
 pd_exit 0
 
 pd_errmsg "sendmail failure" &&
