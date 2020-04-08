@@ -1,0 +1,163 @@
+#!/usr/bin/env bash
+
+###############################################################################@
+##
+## @BEGIN
+##
+## @COPYRIGHT BEGIN
+## Copyright (C) 2020 Panos I. Papadopoulos <panos1962_AT_gmail_DOT_com>
+## @COPYRIGHT END
+##
+## @FILETYPE BEGIN
+## bash
+## @FILETYPE END
+##
+## @FILE BEGIN
+## bin/pd_createdb —— Πρόγραμμα δημιουργίας νέας database
+## @FILE END
+##
+## @DESCRIPTION BEGIN
+## @DESCRIPTION END
+##
+## @HISTORY BEGIN
+## Created: 2020-04-08
+## @HISTORY END
+##
+## @END
+##
+###############################################################################@
+
+[ -z "${PANDORA_BASEDIR}" ] &&
+PANDORA_BASEDIR="/var/opt/pandora"
+
+pd_tmpmax=0
+. "${PANDORA_BASEDIR}/lib/pandora.sh" ||
+exit 2
+
+pd_progname="${pd_progfull}"
+pd_usagemsg="[ OPTIONS ] [ FILES ]
+Options
+-------
+-a admincf, --admin admincf
+-d databasecf, --conf databasecf
+-C, --create
+-q, --quiet
+-v, --verbose
+"
+
+pd_seterrcode \
+	"fserr" \
+	"admincferr" \
+	"dbcferr" \
+	"createdberr"
+
+eval set -- "$(pd_parseopts \
+"a:d:Cqv" \
+"admincf:,dbcf:,create,quiet,verbose" "$@")"
+[ $1 -ne 0 ] && pd_usage
+shift
+
+admincf=
+dbcf=
+create=
+monitor="/dev/tty"
+
+error=
+
+for arg in "$@"
+do
+	case "${arg}" in
+
+	-a|--admincf)
+		admincf="$2"
+		shift 2
+		;;
+
+	-d|--dbcf)
+		dbcf="$2"
+		shift 2
+		;;
+
+	-C|--create)
+		create="yes"
+		shift 1
+		;;
+
+	-q|--quiet)
+		monitor="/dev/null"
+		shift 1
+		;;
+
+	-v|--verbose)
+		monitor="/dev/tty"
+		;;
+
+	--)
+		shift 1
+		;;
+
+	esac
+done
+unset arg
+
+[ -n "${error}" ] &&
+pd_usage
+
+[ -z "${dbcf}" ] &&
+pd_errmsg "unspecified database configuartion file" &&
+pd_exit "dbcferr"
+
+. "${dbcf}" ||
+pd_exit "dbcferr"
+
+[ -z "${dbhost}" ] &&
+dbhost="localhost"
+
+[ -z "${dbname}" ] &&
+pd_errmsg "undefined database name" &&
+error="yes"
+
+[ -n "${dbuser}" ] &&
+[ -z "${dbpass}" ] &&
+pd_errmsg "null database user password" &&
+error="yes"
+
+[ -n "${error}" ] &&
+pd_exit "dbcferr"
+
+[ -w "${monitor}" ] ||
+monitor="/dev/null"
+
+print_schema() {
+	sed "/^\-\-/d
+s;\[\[MONITOR\]\];${monitor};g
+s;\[\[HOST\]\];${dbhost};g
+s;\[\[DATABASE\]\];${dbname};g
+s;\[\[USERNAME\]\];${dbuser};g
+s;\[\[USERPASS\]\];${dbpass};g" "$@"
+}
+
+[ -z "${create}" ] &&
+print_schema "$@" &&
+pd_exit 0
+
+. "${admincf}" ||
+pd_exit "admincferr"
+
+[ -z "${dbadminname}" ] &&
+pd_errmsg "undefined database administrator name" &&
+error="yes"
+
+[ -z "${dbadminpass}" ] &&
+pd_errmsg "null database administrator password" &&
+error="yes"
+
+[ -n "${error}" ] &&
+pd_exit "admincferr"
+
+export MYSQL_PWD="${dbadminpass}"
+print_schema "$@" |
+mysql --user="${dbadminname}" &&
+pd_exit 0
+
+pd_exit "createdberr"
