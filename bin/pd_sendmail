@@ -166,8 +166,9 @@ do
 		;;
 
 	--)
-		shift
+		shift 1
 		;;
+
 	esac
 done
 unset arg
