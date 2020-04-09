@@ -34,7 +34,7 @@ pd_tmpmax=0
 . "${PANDORA_BASEDIR}/lib/pandora.sh" ||
 exit 2
 
-pd_progname="${pd_progfull}"
+pd_errlevel=
 pd_usagemsg="[ OPTIONS ] [ FILES ]
 Options
 -------
