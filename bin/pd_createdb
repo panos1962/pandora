@@ -40,6 +40,7 @@ Options
 -------
 -a admincf, --admin admincf
 -d databasecf, --conf databasecf
+-s key=val, --set key=val
 -C, --create
 -q, --quiet
 -v, --verbose
@@ -52,13 +53,22 @@ pd_seterrcode \
 	"createdberr"
 
 eval set -- "$(pd_parseopts \
-"a:d:Cqv" \
-"admincf:,dbcf:,create,quiet,verbose" "$@")"
+"a:d:s:Cqv" \
+"admincf:,dbcf:,set:,create,quiet,verbose" "$@")"
 [ $1 -ne 0 ] && pd_usage
 shift
 
+keyval_push() {
+	local x="$(echo "${1}" | sed 's$;g
+s=\\]\\];
+s^s;\\[\\[')"
+	keyval="
+${x}"
+}
+
 admincf=
 dbcf=
+keyval=
 create=
 monitor="/dev/tty"
 
@@ -75,6 +85,11 @@ do
 
 	-d|--dbcf)
 		dbcf="$2"
+		shift 2
+		;;
+
+	-s|--set)
+		keyval_push "$2"
 		shift 2
 		;;
 
@@ -129,7 +144,7 @@ pd_exit "dbcferr"
 monitor="/dev/null"
 
 print_schema() {
-	sed "/^\-\-/d
+	sed "/^\-\-/d${keyval}
 s;\[\[MONITOR\]\];${monitor};g
 s;\[\[HOST\]\];${dbhost};g
 s;\[\[DATABASE\]\];${dbname};g
