@@ -324,7 +324,6 @@ pd.paletaCandiEpilogi = (candiDOM) => {
 
 	if (typeof(helper) === 'string')
 	pd.fyiMessage(helper);
-console.log('>>' + text + '<<');
 
 	if (inputDOM.hasClass('pnd-paletaInputVisible'))
 	inputDOM.focus();
