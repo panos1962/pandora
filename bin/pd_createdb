@@ -30,9 +30,12 @@
 [ -z "${PANDORA_BASEDIR}" ] &&
 PANDORA_BASEDIR="/var/opt/pandora"
 
-pd_tmpmax=0
+pd_tmpmax=1
 . "${PANDORA_BASEDIR}/lib/pandora.sh" ||
 exit 2
+pd_sigtrap
+
+tmp1="${pd_tmpname[1]}"
 
 pd_errlevel=
 pd_usagemsg="[ OPTIONS ] [ FILES ]
@@ -50,6 +53,7 @@ pd_seterrcode \
 	"fserr" \
 	"admincferr" \
 	"dbcferr" \
+	"syntaxerr" \
 	"createdberr"
 
 eval set -- "$(pd_parseopts \
@@ -149,12 +153,45 @@ s;\[\[MONITOR\]\];${monitor};g
 s;\[\[HOST\]\];${dbhost};g
 s;\[\[DATABASE\]\];${dbname};g
 s;\[\[USERNAME\]\];${dbuser};g
-s;\[\[USERPASS\]\];${dbpass};g" "$@"
+s;\[\[USERPASS\]\];${dbpass};g" "$@" >"${tmp1}"
+
+	# Ελέγχουμε μήπως μας έχουν ξεφύγει μεταβλητές όπως "[[KARTELDB]]",
+	# "[[ERPOTA_USER]]" κλπ.
+
+	awk '{
+	if (gsub(/\[\[[_a-zA-Z0-9]+\]\]/, "\n&\n", $0))
+	print
+}' "${tmp1}" | awk -v progname="${pd_progname}" 'BEGIN {
+	keyword[""]
 }
 
-[ -z "${create}" ] &&
-print_schema "$@" &&
-pd_exit 0
+$0 ~ /^\[\[.*\]\]/ {
+	keyword[$0]
+}
+
+END {
+	ret = 0
+
+	delete keyword[""]
+	for (i in keyword) {
+		sub(/^\[\[/, "", i)
+		sub(/\]\]$/, "", i)
+
+		print progname ": " i ": undefined variable" >"/dev/stderr"
+		ret = 1
+	}
+
+	exit(ret)
+}'
+}
+
+if [ -z "${create}" ]; then
+	print_schema "$@" ||
+	pd_exit "syntaxerr"
+
+	cat "${tmp1}"
+	pd_exit 0
+fi
 
 . "${admincf}" ||
 pd_exit "admincferr"
@@ -170,9 +207,11 @@ error="yes"
 [ -n "${error}" ] &&
 pd_exit "admincferr"
 
-export MYSQL_PWD="${dbadminpass}"
-print_schema "$@" |
-mysql --user="${dbadminname}" &&
-pd_exit 0
+print_schema "$@" ||
+pd_exit "syntaxerr"
 
+export MYSQL_PWD="${dbadminpass}"
+mysql --user="${dbadminname}" <"${tmp1}" ||
 pd_exit "createdberr"
+
+pd_exit 0
