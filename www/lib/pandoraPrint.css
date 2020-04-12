@@ -1,16 +1,13 @@
 .pnd-toolbar {
-	display: none;
+  display: none;
 }
-
 .pnd-fyi {
-	display: none;
+  display: none;
 }
-
 .pnd-ofelimo {
-	height: auto;
-	overflow-y: visible;
+  height: auto;
+  overflow-y: visible;
 }
-
 .pnd-ribbon {
-	display: none;
+  display: none;
 }

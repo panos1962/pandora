@@ -1,1 +1,32 @@
-@import 'lib/pandoraDebug.css'
+html {
+  background-color: #f00;
+}
+body {
+  background-color: #5f9ea0;
+}
+.ofelimo {
+  background-color: #ffe4b5;
+}
+.toolbar {
+  background-color: #dc143c;
+  border-color: #191970;
+}
+.ribbon {
+  background-color: #dc143c;
+  border-color: #191970;
+}
+.trLeft {
+  background-color: #ff7f50;
+}
+.trCenter {
+  background-color: #ffd700;
+}
+.trRight {
+  background-color: #ff7f50;
+}
+.paleta {
+  background-color: darkSeaGreen;
+}
+.paletaRafi {
+  background-color: #ffd700;
+}
