@@ -318,7 +318,7 @@ To: ${recipient}"
 	echo "Subject: ${subject}"
 
 	echo "MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary=${boundary}
+Content-Type: multipart/mixed; charset=UTF-8; boundary=${boundary}
 "
 
 	[ -s "${tmp2}" ] &&
