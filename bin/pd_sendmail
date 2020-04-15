@@ -272,7 +272,7 @@ attached_files() {
 		echo "--${boundary}
 Content-Type: ${typ}; charset=UTF-8
 Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename=${f}
+Content-Disposition: attachment; filename=$(basename "${f}")
 "
 
 		base64 "${f}" &&
