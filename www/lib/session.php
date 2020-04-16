@@ -42,9 +42,11 @@ if (!is_array($_POST["list"]))
 exit(0);
 
 if (pandora::post_get("unset")) {
-print $key;
 	foreach ($_POST["list"] as $key => $val)
+{
+print ">>>" . $key . "<<<";
 	unset($_SESSION[$key]);
+}
 }
 
 else {

@@ -184,6 +184,20 @@ class pandoraCore {
 
 	///////////////////////////////////////////////////////////////////////@
 
+	public static function is_integer($x, $min = NULL, $max = NULL) {
+		$opts = [
+			"options" => [],
+		];
+
+		if (isset($min))
+		$opts["options"]["min_range"] = $min;
+
+		if (isset($max))
+		$opts["options"]["max_range"] = $max;
+
+		return filter_var($x, FILTER_VALIDATE_INT, $opts );
+	}
+
 	public static function strpush($s, $add, $sep = " ") {
 		if (!isset($s))
 		return $add;
