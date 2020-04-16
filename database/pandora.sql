@@ -116,7 +116,7 @@ COMMIT WORK
 \! echo "Granting permissions…" >[[MONITOR]]
 
 GRANT SELECT, INSERT, UPDATE, DELETE
-ON `[[DATABASE]]`.* TO '[[USERNAME]]'@'localhost'
+ON `*`.`*` TO '[[USERNAME]]'@'localhost'
 ;
 
 COMMIT WORK

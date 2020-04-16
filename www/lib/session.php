@@ -39,9 +39,17 @@ if (!pandora::post_get("list"))
 exit(0);
 
 if (!is_array($_POST["list"]))
-exit(1);
+exit(0);
 
-foreach ($_POST["list"] as $key => $val)
-$_SESSION[$key] = $val;
+if (pandora::post_get("unset")) {
+print $key;
+	foreach ($_POST["list"] as $key => $val)
+	unset($_SESSION[$key]);
+}
+
+else {
+	foreach ($_POST["list"] as $key => $val)
+	$_SESSION[$key] = $val;
+}
 
 exit(0);
