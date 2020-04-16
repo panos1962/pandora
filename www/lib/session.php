@@ -35,18 +35,13 @@ require_once("pandora.php");
 
 pandora::session_init();
 
-print "AAAAA" . PHP_EOL;
-if (!pandora::post_get("_pandoraSessionPost"))
+if (!pandora::post_get("list"))
 exit(0);
 
-if (!is_array($_POST["_pandoraSessionPost"])) {
-	print "EEEEEEE";
-	exit(1);
-}
+if (!is_array($_POST["list"]))
+exit(1);
 
-print "XXXXX" . PHP_EOL;
-foreach ($_POST as $key => $val)
+foreach ($_POST["list"] as $key => $val)
 $_SESSION[$key] = $val;
 
-print "OOOOO" . PHP_EOL;
 exit(0);

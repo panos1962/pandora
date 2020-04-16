@@ -43,6 +43,9 @@ require_once("../local/conf.php");
 if (!class_exists("pandoraCore"))
 require_once(PANDORA_BASEDIR . "/lib/pandoraCore.php");
 
+define("PANDORA_SESSION_POST", "pandora_post");
+define("PANDORA_SESSION_HREF", "pandora_href");
+
 // Για να καθορίσουμε αν έχουμε επώνυμη ή ανώνυμη χρήση σε client προγράμματα
 // ελέγχουμε το session attribute "pandora_xristis"· αν το εν λόγω session
 // attribute έχει τεθεί τότε σημαίνει ότι έχουμε επώνυμη χρήση, αλλιώς έχουμε
@@ -468,6 +471,14 @@ const php = {};
 	}
 
 	private static function jspassa($name, $array, $ilist) {
+		print "php." . $name . " = " . json_encode($array,
+			JSON_FORCE_OBJECT |
+			JSON_UNESCAPED_UNICODE |
+			JSON_UNESCAPED_SLASHES |
+			JSON_PRETTY_PRINT) . ";\n";
+		return;
+// XXX REMOVE CODE BELOW!!!
+
 		print "php." . $name . " = {" . PHP_EOL;
 
 		foreach ($array as $key => $val) {
@@ -545,6 +556,10 @@ const php = {};
 		session_start();
 		self::$session_ok = TRUE;
 
+		if (self::is_session(PANDORA_SESSION_POST))
+		$_POST = json_decode($_SESSION[PANDORA_SESSION_POST], TRUE);
+
+		unset($_SESSION[PANDORA_SESSION_POST]);
 		return __CLASS__;
 	}
 		
