@@ -23,6 +23,7 @@
 // @DESCRIPTION END
 //
 // @HISTORY BEGIN
+// Updated: 2020-04-18
 // Updated: 2020-03-13
 // Updated: 2020-02-10
 // Updated: 2020-01-29
@@ -67,9 +68,11 @@ require_once(PANDORA_BASEDIR . "/lib/pandoraCore.php");
 
 define("PANDORA_SESSION_XRISTIS", "pandora_xristis");
 define("PANDORA_SESSION_XRIDOS", "pandora_xridos");
+define("PANDORA_SESSION_DEBUG", "pandora_debug");
 
 class pandora extends pandoraCore {
 	private static $init_ok = FALSE;
+	private static $debug = FALSE;
 	public static $protocol = NULL;
 	public static $host = NULL;
 	public static $www = NULL;
@@ -77,6 +80,16 @@ class pandora extends pandoraCore {
 	public static function init() {
 		if (self::$init_ok)
 		return __CLASS__;
+
+		self::session_init();
+		self::$debug = self::parameter_get("debug");
+
+		if (self::$debug === NULL)
+		self::$debug = self::session_get(PANDORA_SESSION_DEBUG);
+
+		else
+		self::session_set(PANDORA_SESSION_DEBUG,
+		self::$debug = self::parameter_yes("debug"));
 
 		self::$protocol = "http";
 
@@ -327,7 +340,7 @@ class pandora extends pandoraCore {
 			"Print",
 		];
 
-		if (pandora::parameter_yes("debug"))
+		if (self::$debug)
 		$extras[] = "Debug";
 
 		$slist = self::extract_option($opts, "css");
