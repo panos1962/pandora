@@ -175,11 +175,17 @@ class pandoraCore {
 		throw new Exception("rollback failed");
 	}
 
-	public static function sql_string($s, $quote = TRUE) {
-		if ($quote)
-		$quote = "'";
+	public static function sql_string($s, $quote = "'") {
+		if ($quote === FALSE)
+		$quote = "";
 
 		return $quote . self::$db->real_escape_string($s) . $quote;
+	}
+
+	public static function json_string($s) {
+		return json_encode($s,
+		JSON_FORCE_OBJECT |
+		JSON_UNESCAPED_UNICODE);
 	}
 
 	///////////////////////////////////////////////////////////////////////@
