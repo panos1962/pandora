@@ -216,6 +216,10 @@ class pandoraCore {
 		return filter_var($x, FILTER_VALIDATE_INT, $opts );
 	}
 
+	public static function not_integer($x, $min = NULL, $max = NULL) {
+		return !self::is_integer($x, $min, $max);
+	}
+
 	public static function strpush($s, $add, $sep = " ") {
 		if (!isset($s))
 		return $add;
