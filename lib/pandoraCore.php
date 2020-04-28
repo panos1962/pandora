@@ -25,6 +25,7 @@
 // @DESCRIPTION END
 //
 // @HISTORY BEGIN
+// Updated: 2020-04-28
 // Created: 2020-01-16
 // @HISTORY END
 //
@@ -44,6 +45,17 @@ class pandoraCore {
 		return __CLASS__;
 
 		self::$init_ok = TRUE;
+		register_shutdown_function('pandoraCore::cleanup');
+
+		return __CLASS__;
+	}
+
+	public static function cleanup() {
+		if (isset(self::$db)) {
+			self::$db->close();
+			self::$db = NULL;
+		}
+
 		return __CLASS__;
 	}
 
