@@ -227,6 +227,15 @@ class pandoraCore {
 		return $s . $sep . $add;
 	}
 
+	public static function null_purge($x) {
+		foreach ($x as $k => $v) {
+			if (!isset($v))
+			unset($x[$k]);
+		}
+
+		return $x;
+	}
+
 	public static function noop($x = NULL) {
 		if (!isset($x))
 		$x = __CLASS__;
