@@ -227,7 +227,7 @@ class pandoraCore {
 		return $s . $sep . $add;
 	}
 
-	public static function null_purge($x) {
+	public static function null_purge(&$x) {
 		foreach ($x as $k => $v) {
 			if (!isset($v))
 			unset($x[$k]);
