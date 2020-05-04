@@ -80,7 +80,7 @@ tmp2="${pd_tmpname[2]}"
 pd_sigtrap
 
 eval set -- "$(pd_parseopts \
-"f:t:r:c:b:s:m:npa:" \
+"f:F:t:r:c:b:s:m:npa:" \
 "from:,sender:,to:,recipient:,cc:,carbon:,bcc:,blind:,\
 subject:,message:,null,text,attach:" "$@")"
 [ $1 -ne 0 ] && pd_usage
