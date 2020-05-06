@@ -25,6 +25,7 @@
 // @DESCRIPTION END
 //
 // @HISTORY BEGIN
+// Updated: 2020-05-06
 // Updated: 2020-04-28
 // Created: 2020-01-16
 // @HISTORY END
@@ -150,7 +151,7 @@ class pandoraCore {
 	// Η μέθοδος "first_row" τρέχει ένα query και επιστρέφει την πρώτη
 	// γραμμή των αποτελεσμάτων απελευθερώνοντας τυχόν άλλα αποτελέσματα.
 
-	public static function first_row($query, $idx = MYSQLI_BOTH) {
+	public static function first_row($query, $idx = MYSQLI_NUM) {
 		$result = self::query($query);
 		$row = $result->fetch_array($idx);
 		$result->free_result();
