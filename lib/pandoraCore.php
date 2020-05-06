@@ -228,6 +228,33 @@ class pandoraCore {
 		return $s . $sep . $add;
 	}
 
+	public static function date2date($date = NULL,
+		$from = NULL, $to = NULL) {
+
+		if (!isset($date))
+		return NULL;
+
+		if (is_string($date)) {
+			$date = DateTime::createFromFormat($from, $date);
+
+			if ($date === FALSE)
+			return NULL;
+
+			if (isset($to))
+			return $date->format($to);
+
+			return $date;
+		}
+
+		if (!($date instanceof DateTime))
+		return NULL;
+
+		if (isset($to))
+		return $date->format($to);
+
+		return $date;
+	}
+
 	public static function null_purge(&$x) {
 		foreach ($x as $k => $v) {
 			if (!isset($v))
