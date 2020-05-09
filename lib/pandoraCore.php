@@ -25,6 +25,7 @@
 // @DESCRIPTION END
 //
 // @HISTORY BEGIN
+// Updated: 2020-05-09
 // Updated: 2020-05-06
 // Updated: 2020-04-28
 // Created: 2020-01-16
@@ -203,18 +204,26 @@ class pandoraCore {
 
 	///////////////////////////////////////////////////////////////////////@
 
+	// Στην function που ακολουθεί δεν χρησιμοποιούμε την "filter_var"
+	// με "FILTER_VALIDATE_INT" καθώς δεν επιτρέπει ακεραίους που
+	// εκκινούν με μηδέν, π.χ. "08", "0003" κλπ.
+
 	public static function is_integer($x, $min = NULL, $max = NULL) {
-		$opts = [
-			"options" => [],
-		];
+		if(!preg_match("/^-?\d+$/", $x))
+		return FALSE;
 
-		if (isset($min))
-		$opts["options"]["min_range"] = $min;
+		$y = (int)$x;
 
-		if (isset($max))
-		$opts["options"]["max_range"] = $max;
+		if ($y != $x)
+		return FALSE;
 
-		return filter_var($x, FILTER_VALIDATE_INT, $opts );
+		if (isset($min) && ($y < $min))
+		return FALSE;
+
+		if (isset($max) && ($y > $max))
+		return FALSE;
+
+		return TRUE;
 	}
 
 	public static function not_integer($x, $min = NULL, $max = NULL) {
