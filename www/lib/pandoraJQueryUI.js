@@ -41,10 +41,15 @@ $.datepicker.setDefaults({
 		"Νοέμβριος","Δεκέμβριος" ],
 	'monthNamesShort': [ "Ιαν","Φεβ","Μαρ","Απρ","Μαι","Ιουν","Ιουλ","Αυγ",
 		"Σεπ","Οκτ","Νοε","Δεκ" ],
+/*
 	'dayNames': [ "Κυριακή","Δευτέρα","Τρίτη","Τετάρτη","Πέμπτη",
 		"Παρασκευή","Σάββατο" ],
 	'dayNamesShort': [ "Κυρ","Δευ","Τρι","Τετ","Πεμ","Παρ","Σαβ" ],
 	'dayNamesMin': [ "Κυ","Δε","Τρ","Τε","Πε","Πα","Σα" ],
+*/
+	'dayNames': pd.dowLong,
+	'dayNamesShort': pd.dowShort,
+	'dayNamesMin': pd.dowMin,
 	'weekHeader': "Εβδ",
 	'firstDay': 1,
 	'isRTL': false,
