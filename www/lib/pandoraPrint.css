@@ -5,9 +5,11 @@
   display: none;
 }
 .pnd-ofelimo {
-  height: auto;
-  overflow-y: visible;
+  display: none;
 }
 .pnd-ribbon {
   display: none;
+}
+.pnd-idiaSelida {
+  page-break-inside: avoid;
 }
