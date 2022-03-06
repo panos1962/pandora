@@ -404,10 +404,13 @@ class pandora extends pandoraCore {
 
 	///////////////////////////////////////////////////////////////////////@
 
-	public static function document_body() {
+	public static function document_body($style = NULL) {
 ?>
 </head>
-<body>
+<body<?php
+		if (isset($style))
+		print ' style="' . $style . '"';
+?>>
 <?php
 		return __CLASS__;
 	}
