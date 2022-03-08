@@ -1,10 +1,11 @@
-**/panos*
-**/*.swp
-**/*.min.js
-**/*.bundle.js
-local/*
+panos[0-9]*
+*.sw?
+*.sv
+*.min.js
+bundle.js
+/local/*
 !local/README.txt
-private/*
+/private/*
 !private/README.txt
 node_modules/*
 
