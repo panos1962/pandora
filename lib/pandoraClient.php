@@ -576,7 +576,12 @@ const php = {};
 		if (self::$session_ok)
 		return __CLASS__;
 
-		session_start();
+		if (!session_start())
+		self::fatal("session_start: failed");
+
+		if (!setcookie(session_name(), session_id(), time() + (3600 * 12), "/"))
+		self::fatal("setcookie: failed");
+
 		self::$session_ok = TRUE;
 
 		return __CLASS__;
@@ -723,6 +728,11 @@ const php = {};
 		return ($xridos === $idos);
 
 		return TRUE;
+	}
+
+	public static function fatal($msg = 'pandora error') {
+		exit($msg);
+		return __CLASS__;
 	}
 }
 
