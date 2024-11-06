@@ -57,3 +57,4 @@ pull:
 .PHONY: cleanup
 cleanup:
 	@misc/cleanup.sh
+	@(cd www && make cleanup)
