@@ -3,6 +3,7 @@ panos[0-9]*
 *.sv
 *.min.js
 bundle.js
+jsmin.jar
 /local/*
 !local/README.txt
 /private/*
